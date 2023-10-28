@@ -1,0 +1,46 @@
+# Sample settings, please use as reference only, fill in real values. 
+server_port = 7878
+
+[mongodb]
+connection_url = "mongo://something"
+database = "videosmover"
+download_collection = "download_cache"
+online_collection = "online_cache"
+
+# TODO: use TMDB append_something param to reduce url used
+[tmdb]
+api_key = "myApiKey"
+base_url = "https://api.themoviedb.org/3/"
+search_movies_url = "{}search/movie?api_key={}&query={}&year={}"
+movie_credits_url = "{}movie/{}/credits?api_key={}"
+search_tv_url = "{}search/tv?api_key={}&query={}&year={}"
+tv_credits_url = "{}tv/{}/credits?api_key={}"
+
+[online]
+result_limit = 10
+poster_base = "http://image.tmdb.org/t/p/w92"
+
+[server]
+command_name = "winlegion"
+command_listen_cron = "0/10 0/1 * 1/1 * ? *"
+
+[filesystem]
+downloads_path = "/work/media/downloads"
+movies_path = "/work/media/movies"
+tv_path = "/work/media/tv"
+
+[search]
+max_depth = 2
+exclude_paths = [ "/a/path/to/exclude/from/media/search", "/another/path/to/exclude/from/media/search" ]
+video_min_size_bytes = 52428800
+video_mime_types = [ "video/x-matroska", "video/x-msvideo", "video/mp4", "video/x-flv", "video/quicktime", "video/x-ms-wmv", "video/vnd.dlna.mpeg-tts", "application/x-matroska" ]
+
+[rename]
+trim_regex = [ ".[sS](\\d{1,2})([-]?[eE](\\d{1,2}))?", "[\\.\\s][sS][0-9]{1,2}[\\.\\s]?", "1080p", "720p", "2160p", "BluRay", "HDTV", "x264", "REPACK", "WEB-DL", "BRRip", "H264", "AAC", "XviD", "AC3", "HDRip", "DVDRip", "WEBRip", "DVDScr", "HQ", "KORSUB", "BDRip", ".?RARBG", "(\\d|\\.){1,5}(GB|MB)", "\\.EXTENDED\\.", "MP3", "(DD)?5\\.1", "DTS" ]
+similarity_percent=80
+max_depth=1
+
+[move]
+restricted_remove_paths = [ "someFolder1", "some/folder/to/exclude/from/delete/2" ]
+subs_ext = [ ".srt", ".sub", ".ssa", ".ass", ".usf", ".idx", ".ssf", ".stl", ".smi", ".rt", ".psb", ".pjs", ".ttxt", ".jss", ".gsub", ".aqt", ".nfo" ]
+move.subs-max-depth=5
