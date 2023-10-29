@@ -20,6 +20,10 @@ pub fn router() -> Router {
 async fn search_media(ctx: Extension<ApiContext>) -> http::Result<Json<Vec<MediaFileGroup>>> {
     info!("search_media request received");
 
+    let search_settings = &ctx.settings.search;
+
+    
+
     Ok(Json(vec![MediaFileGroup {
         path: "myPath".to_string(),
         name: "myName".to_string(),
