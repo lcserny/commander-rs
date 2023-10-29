@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{Router, Extension};
 use eyre::Context;
 use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
+use tower_http::{trace::TraceLayer, cors::{CorsLayer, Any}};
 use tracing::info;
 
 use crate::{config::Settings, search, error::Error};
@@ -34,6 +34,16 @@ pub async fn serve(settings: Settings) -> eyre::Result<()> {
         .wrap_err_with(|| format!("could not bind port {} to axum server", port))
 }
 
+fn cors_layer() -> CorsLayer {
+    CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any)
+        .allow_credentials(false)
+}
+
 fn api_router() -> Router {
     search::router()
+        // TODO: add other routers
+        .layer(cors_layer())
 }
