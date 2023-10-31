@@ -101,7 +101,6 @@ fn generate_media_files_group(videos: Vec<DirEntry>, downloads_path: &Path) -> V
         .collect()
 }
 
-// TODO: move this to tests dir?
 #[cfg(test)]
 mod tests {
     use std::{sync::Arc, path::PathBuf, fs::{File, self}, io::BufWriter, io::Write, cmp};
@@ -132,6 +131,41 @@ mod tests {
         }
     }
 
+    /*
+    [
+      {
+        "path": "/downloads/some movie folder",
+        "name": "some movie folder", // this is showed in UI, used by rename
+        "videos": [ // also shown in UI under, but you can't change these individually
+          "video1.mp4"
+        ]
+      },
+      {
+        "path": "/downloads/some tv folder",
+        "name": "some tv folder",
+        "videos": [ // used by move, just resolve <path> to them
+          "video1.mp4",
+          "video2.mp4",
+          "video3.mp4",
+        ]
+      },
+      {
+        "path": "/downloads/some nested folder", // easier to delete
+        "name": "some nested folder", // notice the nested structure
+        "videos": [
+          "another folder/video1.mp4",
+          "another folder/video2.mp4"
+        ]
+      },
+      {
+        "path": "/downloads", // notice no parent folder
+        "name": "video5", // notice its generated from file name without extension
+        "videos": [
+          "video5.mp4",
+        ]
+      },
+    ]
+    */
     #[tokio::test]
     async fn check_search_finds_correct_media() {
         let cfg = init_config("config/settings_test", "TST_CMDR").unwrap();
