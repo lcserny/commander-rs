@@ -11,10 +11,93 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-struct MediaFileGroup {
+pub struct MediaFileGroup {
     path: String,
     name: String,
     videos: Vec<String>,
+}
+
+pub struct MediaFilesParser<'a> {
+    settings: &'a SearchConfig,
+    downloads_path: &'a Path,
+}
+
+impl <'a> MediaFilesParser<'a> {
+    fn new(settings: &'a SearchConfig, downloads_path: &'a Path) -> eyre::Result<Self> {
+        // TODO: validate input?
+        Ok(MediaFilesParser { settings, downloads_path })
+    }
+
+    fn parse(&self, files: Vec<DirEntry>) -> Vec<DirEntry> {
+        files
+            .into_iter()
+            .filter(|p| self.exclude_paths(p))
+            .filter(|p| self.exclude_by_size(p))
+            .filter(|p| self.exclude_by_content(p))
+            .collect()
+    }
+
+    fn exclude_paths(&self, path: &DirEntry) -> bool {
+        for exclude_path in &self.settings.exclude_paths {
+            let path = path.path();
+            if path.is_absolute() && path.to_string_lossy().contains(exclude_path) {
+                return false;
+            }
+        }
+        true
+    }
+    
+    fn exclude_by_content(&self, path: &DirEntry) -> bool {
+        if let Some(mime) = tree_magic_mini::from_filepath(path.path()) {
+            for allowed_mime in &self.settings.video_mime_types {
+                if allowed_mime == mime {
+                    return true;
+                }
+            }
+            if mime.starts_with("video/") {
+                return true;
+            }
+        }
+        false
+    }
+    
+    fn exclude_by_size(&self, path: &DirEntry) -> bool {
+        match path.metadata() {
+            Ok(data) => {
+                data.len() >= self.settings.video_min_size_bytes
+            },
+            Err(_) => false,
+        }
+    }
+    
+    pub fn generate(&self, files: Vec<DirEntry>) -> Vec<MediaFileGroup> {
+        let mut tmp_map = HashMap::new();
+        
+        for video_path in self.parse(files) {
+            let video_path_segments: Vec<String> = video_path.into_path().iter()
+                .skip(self.downloads_path.iter().count())
+                .map(|p| p.to_string_lossy().into_owned()).collect();
+    
+            let mut name = video_path_segments[0].clone();
+            let mut path = self.downloads_path.to_path_buf();
+            let mut video = name.clone();
+    
+            if video_path_segments.len() > 1 {
+                path = self.downloads_path.join(&name);
+                video = String::from(&video_path_segments[1..].join(MAIN_SEPARATOR_STR));
+            } else {
+                name = String::from(&name[..name.rfind('.').unwrap_or(name.len())]);
+            }
+    
+            tmp_map.entry((path.to_string_lossy().into_owned(), name))
+                .or_insert(vec![])
+                .push(video);
+        }
+    
+        tmp_map.into_iter()
+            .map(|((path, name), videos)| MediaFileGroup { path, name, videos })
+            .collect()
+    }
 }
 
 pub fn router() -> Router {
@@ -26,79 +109,10 @@ async fn search_media(ctx: Extension<ApiContext>) -> http::Result<Json<Vec<Media
 
     let search_settings = &ctx.settings.search;
     let downloads_path = PathBuf::from(&ctx.settings.filesystem.downloads_path);
-
+    let parser = MediaFilesParser::new(search_settings, &downloads_path)?;
     let files = files::walk_files(&downloads_path, search_settings.max_depth)?;
 
-    let files: Vec<DirEntry> = files
-        .into_iter()
-        .filter(|p| exclude_configured_paths(p, search_settings))
-        .filter(|p| exclude_non_videos_by_content(p, search_settings))
-        .filter(|p| exclude_non_videos_by_size(p, search_settings))
-        .collect();
-
-    Ok(Json(generate_media_files_group(files, &downloads_path)))
-}
-
-fn exclude_configured_paths(path: &DirEntry, search_cfg: &SearchConfig) -> bool {
-    for exclude_path in &search_cfg.exclude_paths {
-        let path = path.path();
-        if path.is_absolute() && path.to_string_lossy().contains(exclude_path) {
-            return false;
-        }
-    }
-    true
-}
-
-fn exclude_non_videos_by_content(path: &DirEntry, search_cfg: &SearchConfig) -> bool {
-    if let Some(mime) = tree_magic_mini::from_filepath(path.path()) {
-        for allowed_mime in &search_cfg.video_mime_types {
-            if allowed_mime == mime {
-                return true;
-            }
-        }
-        if mime.starts_with("video/") {
-            return true;
-        }
-    }
-    false
-}
-
-fn exclude_non_videos_by_size(path: &DirEntry, search_cfg: &SearchConfig) -> bool {
-    match path.metadata() {
-        Ok(data) => {
-            data.len() >= search_cfg.video_min_size_bytes
-        },
-        Err(_) => false,
-    }
-}
-
-fn generate_media_files_group(videos: Vec<DirEntry>, downloads_path: &Path) -> Vec<MediaFileGroup> {
-    let mut tmp_map = HashMap::new();
-    
-    for video_path in videos {
-        let video_path_segments: Vec<String> = video_path.into_path().into_iter()
-            .skip(downloads_path.iter().count())
-            .map(|p| p.to_string_lossy().into_owned()).collect();
-
-        let mut name = video_path_segments[0].clone();
-        let mut path = downloads_path.to_path_buf();
-        let mut video = name.clone();
-
-        if video_path_segments.len() > 1 {
-            path = downloads_path.join(&name);
-            video = String::from(&video_path_segments[1..].join(MAIN_SEPARATOR_STR));
-        } else {
-            name = String::from(&name[..name.rfind('.').unwrap_or_else(|| name.len())]);
-        }
-
-        tmp_map.entry((path.to_string_lossy().into_owned(), name))
-            .or_insert(vec![])
-            .push(video);
-    }
-
-    tmp_map.into_iter()
-        .map(|((path, name), videos)| MediaFileGroup { path, name, videos })
-        .collect()
+    Ok(Json(parser.generate(files)))
 }
 
 #[cfg(test)]

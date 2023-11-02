@@ -85,10 +85,10 @@ pub fn init_logging(log_file_path: &str) -> eyre::Result<()> {
 pub fn init_config(filename: &str, env_prefix: &str) -> Result<Settings> { 
     let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "development".into()); 
  
-    return Config::builder() 
+    Config::builder() 
                 .add_source(File::with_name(filename)) 
                 .add_source(File::with_name(&format!("{}_{}", filename, run_mode)).required(false)) 
                 .add_source(Environment::with_prefix(env_prefix)) 
                 .build()? 
-                .try_deserialize().wrap_err_with(|| format!("failed to create Settings from config proovided: {}", &filename)); 
+                .try_deserialize().wrap_err_with(|| format!("failed to create Settings from config proovided: {}", &filename))
 } 
