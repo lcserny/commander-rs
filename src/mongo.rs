@@ -32,7 +32,7 @@ pub struct MongoDownloadsCacheRetriever {
 }
 
 impl MongoDownloadsCacheRetriever {
-    pub fn new(client: Client, settings: Arc<Settings>) -> impl DownloadCacheRetriever {
+    pub fn new(client: Client, settings: Arc<Settings>) -> Self {
         MongoDownloadsCacheRetriever { client, settings }
     }
 }

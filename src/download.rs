@@ -33,7 +33,7 @@ pub fn router() -> Router {
 async fn downloads_completed(ctx: Extension<ApiContext>, Query(params): Query<DownloadsCompletedParams>) -> http::Result<Json<Vec<DownloadedMedia>>> {
     info!("downloads_completed request received with year {}, month {} and day {}", params.year, params.month, params.day);
 
-    let date = NaiveDate::from_ymd_opt(params.year, params.month, params.day).wrap_err_with(|| format!("Could not create date from passed args: {:?}", params))?;
+    let date = NaiveDate::from_ymd_opt(params.year, params.month, params.day).wrap_err_with(|| format!("could not create date from passed args: {:?}", params))?;
     let time = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
     let date_from = NaiveDateTime::new(date, time);
     let date_to = NaiveDateTime::new(date, time).checked_add_days(Days::new(1)).unwrap();
