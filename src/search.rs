@@ -1,4 +1,4 @@
-use std::{path::{Path, PathBuf, MAIN_SEPARATOR_STR}, collections::HashMap};
+use std::{path::{PathBuf, MAIN_SEPARATOR_STR}, collections::HashMap, sync::Arc};
 
 use axum::{routing::get, Extension, Json, Router};
 use serde::Serialize;
@@ -7,7 +7,7 @@ use walkdir::DirEntry;
 
 use crate::{
     files,
-    http::{self, ApiContext}, config::SearchConfig,
+    http::{self, ApiContext}, config::Settings,
 };
 
 #[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -17,14 +17,15 @@ pub struct MediaFileGroup {
     videos: Vec<String>,
 }
 
-pub struct MediaFilesParser<'a> {
-    settings: &'a SearchConfig,
-    downloads_path: &'a Path,
+pub struct MediaFilesParser {
+    settings: Arc<Settings>,
+    downloads_path: PathBuf,
 }
 
-impl <'a> MediaFilesParser<'a> {
-    fn new(settings: &'a SearchConfig, downloads_path: &'a Path) -> eyre::Result<Self> {
-        // TODO: validate input?
+// TODO: make it async somehow?
+impl MediaFilesParser {
+    fn new(settings: Arc<Settings>, downloads_path: PathBuf) -> eyre::Result<Self> {
+        // TODO: validate input
         Ok(MediaFilesParser { settings, downloads_path })
     }
 
@@ -38,7 +39,7 @@ impl <'a> MediaFilesParser<'a> {
     }
 
     fn exclude_paths(&self, path: &DirEntry) -> bool {
-        for exclude_path in &self.settings.exclude_paths {
+        for exclude_path in &self.settings.search.exclude_paths {
             let path = path.path();
             if path.is_absolute() && path.to_string_lossy().contains(exclude_path) {
                 return false;
@@ -49,7 +50,7 @@ impl <'a> MediaFilesParser<'a> {
     
     fn exclude_by_content(&self, path: &DirEntry) -> bool {
         if let Some(mime) = tree_magic_mini::from_filepath(path.path()) {
-            for allowed_mime in &self.settings.video_mime_types {
+            for allowed_mime in &self.settings.search.video_mime_types {
                 if allowed_mime == mime {
                     return true;
                 }
@@ -64,7 +65,7 @@ impl <'a> MediaFilesParser<'a> {
     fn exclude_by_size(&self, path: &DirEntry) -> bool {
         match path.metadata() {
             Ok(data) => {
-                data.len() >= self.settings.video_min_size_bytes
+                data.len() >= self.settings.search.video_min_size_bytes
             },
             Err(_) => false,
         }
@@ -107,10 +108,10 @@ pub fn router() -> Router {
 async fn search_media(ctx: Extension<ApiContext>) -> http::Result<Json<Vec<MediaFileGroup>>> {
     info!("search_media request received");
 
-    let search_settings = &ctx.settings.search;
-    let downloads_path = PathBuf::from(&ctx.settings.filesystem.downloads_path);
-    let parser = MediaFilesParser::new(search_settings, &downloads_path)?;
-    let files = files::walk_files(&downloads_path, search_settings.max_depth)?;
+    let settings = ctx.settings.clone();
+    let downloads_path = PathBuf::from(&settings.filesystem.downloads_path);
+    let files = files::walk_files(&downloads_path, settings.search.max_depth)?;
+    let parser = MediaFilesParser::new(settings, downloads_path)?;
 
     Ok(Json(parser.generate(files)))
 }
@@ -120,6 +121,7 @@ mod tests {
     use std::{sync::Arc, path::PathBuf, fs::{File, self}, io::BufWriter, io::Write, cmp};
 
     use axum::Extension;
+    use mongodb::{Client, options::ClientOptions};
     use rand::RngCore;
 
     use crate::{config::init_config, http::ApiContext};
@@ -194,7 +196,11 @@ mod tests {
         create_file(downloads_path.join("nested folder/nested.mp4"), 6);
         create_file(downloads_path.join("1/2/3/4/5/deep.mp4"), 6);
 
-        let ctx = ApiContext { settings: Arc::new(cfg) };
+        let ctx = ApiContext { 
+            settings: Arc::new(cfg), 
+            mongo_client: Client::with_options(ClientOptions::builder().build()).unwrap()
+        };
+
         let videos_json = search_media(Extension(ctx)).await.unwrap();
         let mut videos = videos_json.0;
         videos.sort();
