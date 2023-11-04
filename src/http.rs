@@ -17,13 +17,13 @@ pub struct ApiContext {
     pub mongo_client: Client,
 }
 
-pub async fn serve(settings: Settings) -> eyre::Result<()> {
+pub async fn serve(settings: Settings, mongo_client: Client) -> eyre::Result<()> {
     let port = settings.server_port;
 
     let app = api_router().layer(
         ServiceBuilder::new()
             .layer(Extension(ApiContext {
-                mongo_client: Client::with_uri_str(&settings.mongodb.connection_url).await?,
+                mongo_client,
                 settings: Arc::new(settings),
             }))
             .layer(TraceLayer::new_for_http()),
