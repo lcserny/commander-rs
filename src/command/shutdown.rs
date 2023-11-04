@@ -11,7 +11,7 @@ pub struct ShutdownCommandExecutor;
 
 #[async_trait]
 impl CommandExecutor for ShutdownCommandExecutor {
-    async fn execute(&self, params: Vec<CmdArg>) -> eyre::Result<CommandResp> {
+    async fn execute(&self, _params: Vec<CmdArg>) -> eyre::Result<CommandResp> {
         info!("executing shutdown command");
         
         // TODO: impl args
