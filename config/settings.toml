@@ -2,7 +2,7 @@
 server_port = 7878
 
 [mongodb]
-connection_url = "mongo://something"
+connection_url = "mongodb://root:rootpassword@localhost:27017/?retryWrites=true&w=majority"
 database = "videosmover"
 download_collection = "download_cache"
 online_collection = "online_cache"
