@@ -1,9 +1,9 @@
-use std::process::Command;
+use std::{process::Command, env};
 
 use async_trait::async_trait;
 use tracing::info;
 
-use super::{CommandExecutor, CmdArg, CommandResp, Status};
+use super::{CommandExecutor, CommandResp, Status};
 
 pub const KEY: &str = "shutdown";
 
@@ -11,17 +11,26 @@ pub struct ShutdownCommandExecutor;
 
 #[async_trait]
 impl CommandExecutor for ShutdownCommandExecutor {
-    async fn execute(&self, _params: Vec<CmdArg>) -> eyre::Result<CommandResp> {
+    async fn execute(&self, mut params: Vec<String>) -> eyre::Result<CommandResp> {
         info!("executing shutdown command");
-        
-        // TODO: impl args
-        let output = if cfg!(target_os = "windows") {
-            Command::new("shutdown").arg("-s").output()?
-        } else {
-            Command::new("shutdown").arg("now").output()?
-        };
 
+        handle_params(&mut params);
+
+        let output = Command::new("shutdown").args(&params).output()?;
         info!("shutdown command executed with exit code {}", output.status);
-        Ok(CommandResp { status: Status::Success })
+
+        Ok(CommandResp {
+            status: Status::Success,
+        })
+    }
+}
+
+fn handle_params(params: &mut Vec<String>) {
+    if params.is_empty() {
+        if env::consts::OS == "windows" {
+            params.push("-s".to_owned());
+        } else if env::consts::OS == "linux" {
+            params.push("now".to_owned());
+        }    
     }
 }

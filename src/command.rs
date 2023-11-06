@@ -29,19 +29,13 @@ fn init_commands() -> Commands {
 
 #[async_trait]
 pub trait CommandExecutor {
-    async fn execute(&self, params: Vec<CmdArg>) -> eyre::Result<CommandResp>;
+    async fn execute(&self, mut params: Vec<String>) -> eyre::Result<CommandResp>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CommandReq {
     name: String,
-    params: Vec<CmdArg>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CmdArg {
-    pub key: String,
-    pub val: String,
+    params: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,7 +63,7 @@ async fn execute_cmd(
             .map(|(_, cmd)| cmd)
             .next()
         {
-            Some(cmd) => cmd.execute(req.params).await?,
+            Some(cmd) => cmd.execute(req.params.unwrap_or_else(|| vec![])).await?,
             None => CommandResp {
                 status: Status::NotFound,
             },

@@ -1,6 +1,11 @@
-use commander::{config::{init_logging, init_config}, http};
+use commander::{
+    config::{init_config, init_logging},
+    http,
+};
 use eyre::Result;
 use mongodb::Client;
+
+// TODO: add tests
 
 #[tokio::main]
 async fn main() -> Result<()> {
