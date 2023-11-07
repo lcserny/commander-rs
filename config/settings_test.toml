@@ -42,5 +42,5 @@ max_depth = 1
 
 [mv]
 restricted_remove_paths = [ "someFolder1", "some/folder/to/exclude/from/delete/2" ]
-subs_ext = [ ".srt", ".sub", ".ssa", ".ass", ".usf", ".idx", ".ssf", ".stl", ".smi", ".rt", ".psb", ".pjs", ".ttxt", ".jss", ".gsub", ".aqt", ".nfo" ]
+subs_ext = [ "srt", "sub", "ssa", "ass", "usf", "idx", "ssf", "stl", "smi", "rt", "psb", "pjs", "ttxt", "jss", "gsub", "aqt", "nfo" ]
 subs_max_depth = 5

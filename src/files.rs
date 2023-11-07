@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::{path::Path, fs};
 
-use eyre::eyre;
+use eyre::{eyre, Context};
 use walkdir::{WalkDir, DirEntry};
 
 enum WalkOptions {
@@ -37,4 +37,14 @@ fn walk(path: &Path, max_depth: u8, options: WalkOptions) -> eyre::Result<Vec<Di
         })
         .collect()
     )
+}
+
+pub fn move_files(src: &Path, dest: &Path) -> eyre::Result<()> {
+    fs::rename(src, dest).wrap_err_with(|| 
+        format!("could not move path {} to {}", src.to_string_lossy(), dest.to_string_lossy()))
+}
+
+pub fn delete_dir(path: &Path) -> eyre::Result<()> {
+    fs::remove_dir_all(path).wrap_err_with(|| 
+        format!("could not remove all dirs from path {}", path.to_string_lossy()))
 }

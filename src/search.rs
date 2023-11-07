@@ -1,7 +1,7 @@
 use std::{path::{PathBuf, MAIN_SEPARATOR_STR}, collections::HashMap, sync::Arc};
 
 use axum::{routing::get, Extension, Json, Router};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use tracing::info;
 use walkdir::DirEntry;
 
@@ -10,11 +10,11 @@ use crate::{
     http::{self, ApiContext}, config::Settings,
 };
 
-#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MediaFileGroup {
-    path: String,
-    name: String,
-    videos: Vec<String>,
+    pub path: String,
+    pub name: String,
+    pub videos: Vec<String>,
 }
 
 pub struct MediaFilesParser {

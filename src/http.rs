@@ -7,7 +7,7 @@ use tower::ServiceBuilder;
 use tower_http::{trace::TraceLayer, cors::{CorsLayer, Any}};
 use tracing::info;
 
-use crate::{config::Settings, search, error::Error, download, command};
+use crate::{config::Settings, search, error::Error, download, command, moving};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -49,5 +49,6 @@ fn api_router() -> Router {
     search::router()
         .merge(download::router())
         .merge(command::router())
+        .merge(moving::router())
         .layer(cors_layer())
 }
