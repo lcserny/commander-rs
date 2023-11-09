@@ -31,46 +31,28 @@ pub struct MediaMoveError {
 
 impl MediaMoveError {
     fn new(media_path: String, error: eyre::Report) -> Self {
-        MediaMoveError {
-            media_path,
-            error: error.to_string(),
-        }
+        MediaMoveError { media_path, error: error.to_string(), }
     }
 }
 
 pub fn router() -> Router {
-    Router::new().route(
-        "/api/v1/media-moves",
-        post(move_media).with_state(Arc::new(Regex::new(EPISODE_SEGMENT_REGEX).unwrap())),
+    Router::new().route( "/api/v1/media-moves", post(move_media)
+        .with_state(Arc::new(Regex::new(EPISODE_SEGMENT_REGEX).unwrap())),
     )
 }
 
-async fn move_media(
-    State(episode_regex): State<Arc<Regex>>,
-    ctx: Extension<ApiContext>,
-    Json(req): Json<MediaMoveReq>,
-) -> Json<Vec<MediaMoveError>> {
+async fn move_media( State(episode_regex): State<Arc<Regex>>, ctx: Extension<ApiContext>, Json(req): Json<MediaMoveReq>) -> Json<Vec<MediaMoveError>> {
     let media_path = req.file_group.path.clone();
     let mut errors = vec![];
 
-    if let Err(e) = perform_move_media(
-        episode_regex,
-        ctx.settings.clone(),
-        req.file_group,
-        req.media_type,
-    ) {
+    if let Err(e) = perform_move_media(episode_regex, ctx.settings.clone(), req.file_group, req.media_type) {
         errors.push(MediaMoveError::new(media_path, e));
     }
 
     Json(errors)
 }
 
-fn perform_move_media(
-    episode_regex: Arc<Regex>,
-    settings: Arc<Settings>,
-    file_group: MediaFileGroup,
-    media_type: MediaFileType,
-) -> eyre::Result<()> {
+fn perform_move_media( episode_regex: Arc<Regex>, settings: Arc<Settings>, file_group: MediaFileGroup, media_type: MediaFileType) -> eyre::Result<()> {
     match media_type {
         MediaFileType::MOVIE => move_media_and_subs(MovieMedia::new(settings, file_group)),
         MediaFileType::TV => move_media_and_subs(TvMedia::new(settings, file_group, episode_regex)),
@@ -79,10 +61,8 @@ fn perform_move_media(
 
 trait Media {
     fn already_exists(&self) -> bool;
-    fn media_path(&self) -> &str;
-    fn media_name(&self) -> &str;
     fn dest_root(&self) -> &str;
-    fn videos(&self) -> &Vec<String>;
+    fn file_group(&self) -> &MediaFileGroup;
     fn settings(&self) -> &Settings;
     fn move_subs(&self, dest: &Path, subs: Vec<DirEntry>) -> eyre::Result<()>;
 }
@@ -94,34 +74,22 @@ struct MovieMedia {
 
 impl MovieMedia {
     fn new(settings: Arc<Settings>, file_group: MediaFileGroup) -> Self {
-        MovieMedia {
-            settings,
-            file_group,
-        }
+        MovieMedia { settings, file_group, }
     }
 }
 
 impl Media for MovieMedia {
     fn already_exists(&self) -> bool {
-        let movie_path =
-            Path::new(&self.settings.filesystem.movies_path).join(&self.file_group.name);
+        let movie_path = Path::new(&self.settings.filesystem.movies_path).join(&self.file_group.name);
         movie_path.exists() && movie_path.is_dir()
-    }
-
-    fn media_path(&self) -> &str {
-        &self.file_group.path
-    }
-
-    fn media_name(&self) -> &str {
-        &self.file_group.name
     }
 
     fn dest_root(&self) -> &str {
         &self.settings.filesystem.movies_path
     }
 
-    fn videos(&self) -> &Vec<String> {
-        &self.file_group.videos
+    fn file_group(&self) -> &MediaFileGroup {
+        &self.file_group
     }
 
     fn settings(&self) -> &Settings {
@@ -147,11 +115,7 @@ struct TvMedia {
 
 impl TvMedia {
     fn new(settings: Arc<Settings>, file_group: MediaFileGroup, episode_regex: Arc<Regex>) -> Self {
-        TvMedia {
-            settings,
-            file_group,
-            episode_regex,
-        }
+        TvMedia { settings, file_group, episode_regex, }
     }
 }
 
@@ -160,20 +124,12 @@ impl Media for TvMedia {
         false
     }
 
-    fn media_path(&self) -> &str {
-        &self.file_group.path
-    }
-
-    fn media_name(&self) -> &str {
-        &self.file_group.name
-    }
-
     fn dest_root(&self) -> &str {
         &self.settings.filesystem.tv_path
     }
 
-    fn videos(&self) -> &Vec<String> {
-        &self.file_group.videos
+    fn file_group(&self) -> &MediaFileGroup {
+        &self.file_group
     }
 
     fn settings(&self) -> &Settings {
@@ -186,12 +142,13 @@ impl Media for TvMedia {
                 let src = sub.path();
 
                 let mut sub_name = src.file_name().unwrap().to_string_lossy().into_owned();
-                src.iter().for_each(|segment| {
+                for segment in src.iter() {
                     let segment = segment.to_string_lossy().into_owned();
                     if self.episode_regex.is_match(&segment) {
                         sub_name = format!("{}.{}", segment, sub_name);
+                        break;
                     }
-                });
+                }
 
                 let new_dest = dest.join(SUBS_DIR).join(&sub_name);
                 files::move_files(src, &new_dest)
@@ -200,32 +157,32 @@ impl Media for TvMedia {
     }
 }
 
-fn move_media_and_subs<M: Media>(m: M) -> eyre::Result<()> {
-    if m.already_exists() {
-        info!("media with path already exists: {}", m.media_path());
+fn move_media_and_subs<M: Media>(media: M) -> eyre::Result<()> {
+    if media.already_exists() {
+        info!("media with path already exists: {}", &media.file_group().path);
         return Ok(());
     }
 
-    let dest_root = m.dest_root();
+    let dest_root = media.dest_root();
 
-    for video in m.videos() {
-        let media_src = Path::new(m.media_path()).join(video);
-        let media_dest = Path::new(dest_root).join(m.media_name()).join(video);
+    for video in &media.file_group().videos {
+        let media_src = Path::new(&media.file_group().path).join(video);
+        let media_dest = Path::new(dest_root).join(&media.file_group().name).join(video);
         files::move_files(&media_src, &media_dest)?;
     }
 
-    let subs_src = Path::new(m.media_path()).to_path_buf();
+    let subs_src = Path::new(&media.file_group().path).to_path_buf();
     let subs_src_str = subs_src.to_string_lossy();
 
-    if &subs_src_str == &m.settings().filesystem.downloads_path {
+    if &subs_src_str == &media.settings().filesystem.downloads_path {
         info!("path to move subs is root Downloads path, skipping operation");
         return Ok(());
     }
 
-    let mut subs = files::walk_files(&subs_src, m.settings().mv.subs_max_depth)?;
+    let mut subs = files::walk_files(&subs_src, media.settings().mv.subs_max_depth)?;
     subs = subs
         .into_iter()
-        .filter(|sub| exclude_non_subs(m.settings(), sub))
+        .filter(|sub| exclude_non_subs(media.settings(), sub))
         .collect();
 
     if subs.is_empty() {
@@ -233,20 +190,17 @@ fn move_media_and_subs<M: Media>(m: M) -> eyre::Result<()> {
         return Ok(());
     }
 
-    let subs_dest = Path::new(dest_root).join(m.media_name());
-    m.move_subs(&subs_dest, subs)?;
+    let subs_dest = Path::new(dest_root).join(&media.file_group().name);
+    media.move_subs(&subs_dest, subs)?;
 
-    clean_media_src(m.settings(), m.media_path())?;
+    clean_media_src(media.settings(), &media.file_group().path)?;
 
     Ok(())
 }
 
 fn exclude_non_subs(settings: &Settings, sub: &DirEntry) -> bool {
-    settings
-        .mv
-        .subs_ext
-        .iter()
-        .any(|ext| match sub.path().extension() {
+    settings.mv.subs_ext.iter().any(|ext| 
+        match sub.path().extension() {
             Some(sub_ext) => OsStr::new(ext) == sub_ext,
             None => false,
         })
@@ -257,10 +211,7 @@ fn clean_media_src(settings: &Settings, path_str: &str) -> eyre::Result<()> {
         || &settings.filesystem.movies_path == path_str
         || &settings.filesystem.tv_path == path_str
     {
-        info!(
-            "cleaning aborted, media src dir is important folder: {}",
-            path_str
-        );
+        info!("cleaning aborted, media src dir is important folder: {}", path_str);
         return Ok(());
     }
 
