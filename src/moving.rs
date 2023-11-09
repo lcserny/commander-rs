@@ -220,10 +220,7 @@ fn clean_media_src(settings: &Settings, path_str: &str) -> eyre::Result<()> {
         match path.iter().last() {
             Some(last_segment) => {
                 if OsStr::new(restricted_path) == last_segment {
-                    info!(
-                        "clean media src dir aborted, restricted folder: {}",
-                        restricted_path
-                    );
+                    info!( "clean media src dir aborted, restricted folder: {}", restricted_path);
                     return Ok(());
                 }
             }
