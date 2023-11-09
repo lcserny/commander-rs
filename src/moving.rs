@@ -42,21 +42,21 @@ pub fn router() -> Router {
 }
 
 async fn move_media( State(episode_regex): State<Arc<Regex>>, ctx: Extension<ApiContext>, Json(req): Json<MediaMoveReq>) -> Json<Vec<MediaMoveError>> {
-    let media_path = req.file_group.path.clone();
-    let mut errors = vec![];
+    let settings = ctx.settings.clone();
+    let file_group = req.file_group;
+    let media_path = file_group.path.clone();
 
-    if let Err(e) = perform_move_media(episode_regex, ctx.settings.clone(), req.file_group, req.media_type) {
-        errors.push(MediaMoveError::new(media_path, e));
-    }
-
-    Json(errors)
-}
-
-fn perform_move_media( episode_regex: Arc<Regex>, settings: Arc<Settings>, file_group: MediaFileGroup, media_type: MediaFileType) -> eyre::Result<()> {
-    match media_type {
+    let res = match req.media_type {
         MediaFileType::MOVIE => move_media_and_subs(MovieMedia::new(settings, file_group)),
         MediaFileType::TV => move_media_and_subs(TvMedia::new(settings, file_group, episode_regex)),
-    }
+    }; 
+    
+    let mut errors = vec![];
+    if let Err(e) = res {
+        errors.push(MediaMoveError::new(media_path, e));
+    };
+
+    Json(errors)
 }
 
 trait Media {
