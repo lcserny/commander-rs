@@ -118,34 +118,12 @@ async fn search_media(ctx: Extension<ApiContext>) -> http::Result<Json<Vec<Media
 
 #[cfg(test)]
 mod tests {
-    use std::{sync::Arc, path::PathBuf, fs::{File, self}, io::BufWriter, io::Write, cmp};
+    use std::{sync::Arc, path::PathBuf};
 
     use axum::Extension;
-    use mongodb::{Client, options::ClientOptions};
-    use rand::RngCore;
 
-    use crate::{config::init_config, http::ApiContext, mongo::MongoDbWrapper, db::DbClient};
+    use crate::{http::ApiContext, db::DbClient, tests::{EmptyDb, create_file, create_test_settings}};
     use super::search_media;
-
-    fn create_file(path: PathBuf, size: usize) {
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-
-        let f = File::create(path).unwrap();
-        let mut writer = BufWriter::new(f);
-        
-        let mut rng = rand::thread_rng();
-        let mut buffer = [0; 1024];
-        let mut remaining_size = size;
-        
-        while remaining_size > 0 {
-            let to_write = cmp::min(remaining_size, buffer.len());
-            let buffer=  &mut buffer[..to_write];
-            rng.fill_bytes(buffer);
-            writer.write(buffer).unwrap();
-            
-            remaining_size -= to_write;
-        }
-    }
 
     /*
     [
@@ -182,33 +160,26 @@ mod tests {
       },
     ]
     */
-    // FIXME: sometimes this fails, maybe a inmem fs could fix?
     #[tokio::test]
     async fn check_search_finds_correct_media() {
-        let cfg = init_config("config/settings_test", "TST_CMDR").unwrap();
-        let fs_settings = &cfg.filesystem;
-        let search_settings = &cfg.search;
+        let settings = create_test_settings();
+        let db_client = DbClient::new(Arc::new(EmptyDb));
 
-        let downloads_path = PathBuf::from(&fs_settings.downloads_path);
+        let downloads_path = PathBuf::from(&settings.filesystem.downloads_path);
         create_file(downloads_path.join("video1.mp4"), 6);
-        create_file(downloads_path.join(&search_settings.exclude_paths[0]).join("excluded.mp4"), 6);
+        create_file(downloads_path.join(&settings.search.exclude_paths[0]).join("excluded.mp4"), 6);
         create_file(downloads_path.join("video3.mkv"), 6);
         create_file(downloads_path.join("small.mp4"), 0);
         create_file(downloads_path.join("nested folder/nested.mp4"), 6);
         create_file(downloads_path.join("1/2/3/4/5/deep.mp4"), 6);
 
-        let settings = Arc::new(cfg);
-        // TODO: replace with a fake db
-        let mongo_client = Client::with_options(ClientOptions::builder().build()).unwrap();
-        let db_wrapper = MongoDbWrapper::new(mongo_client, settings.clone());
-        let db_client = DbClient::new(Arc::new(db_wrapper));
-        let ctx = ApiContext { settings, db_client };
+        let mut videos_json = search_media(Extension(ApiContext{ settings, db_client })).await.unwrap();
 
-        let videos_json = search_media(Extension(ctx)).await.unwrap();
-        let mut videos = videos_json.0;
-        videos.sort();
+        videos_json.0.sort();
         
+        let videos = videos_json.0;
         let downloads_str = downloads_path.to_string_lossy().into_owned();
+
         assert_eq!(3, videos.len());
         assert_eq!(downloads_str, videos[0].path);
         assert_eq!("video1.mp4", &videos[0].videos[0]);
