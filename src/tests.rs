@@ -25,7 +25,13 @@ impl DownloadCacheRepo for EmptyDb {
     }
 }
 
+fn init_test_logging() { 
+    tracing_subscriber::fmt().pretty().init(); 
+} 
+
 pub fn create_test_settings() -> Arc<Settings> {
+    init_test_logging();
+    
     let cfg = init_config("config/settings_test", "TST_CMDR").unwrap();
     Arc::new(cfg)
 }
