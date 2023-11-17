@@ -61,4 +61,9 @@ mod tests {
         assert_eq!("2023-11-30 00:00:00".to_owned(), date_from.format(DATE_PATTERN).to_string());
         assert_eq!("2023-12-01 00:00:00".to_owned(), date_to.format(DATE_PATTERN).to_string());
     }
+
+    #[tokio::test]
+    async fn download_displays_correct_media() {
+
+    }
 }

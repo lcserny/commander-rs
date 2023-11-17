@@ -172,7 +172,8 @@ mod tests {
         create_file(downloads_path.join("nested folder/nested.mp4"), 6);
         create_file(downloads_path.join("1/2/3/4/5/deep.mp4"), 6);
 
-        let mut videos_json = search_media(Extension(ApiContext{ settings, db_client })).await.unwrap();
+        let ctx = ApiContext{ settings: Arc::new(settings), db_client };
+        let mut videos_json = search_media(Extension(ctx)).await.unwrap();
 
         videos_json.0.sort();
         
