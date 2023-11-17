@@ -25,7 +25,6 @@ pub struct MediaFilesParser {
 // TODO: make it async somehow?
 impl MediaFilesParser {
     fn new(settings: Arc<Settings>, downloads_path: PathBuf) -> eyre::Result<Self> {
-        // TODO: validate input
         Ok(MediaFilesParser { settings, downloads_path })
     }
 
