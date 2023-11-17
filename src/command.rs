@@ -70,3 +70,19 @@ async fn execute_cmd(
 
     Ok(Json(resp))
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn commands_execute_correctly() {
+        // TODO
+        // init commands with a fake command (need to add it to enum)
+            // create fake command that can be verified, has resp SUCCESS or so given in constructor
+
+        // create req
+        // call axum handler
+
+        // check resp is the expected one
+    }
+}
