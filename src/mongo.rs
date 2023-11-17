@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{NaiveDateTime, Datelike, Timelike};
-use eyre::Context;
+use chrono::NaiveDateTime;
+
 use futures::TryStreamExt;
 use mongodb::{bson::{DateTime, doc, Bson}, Client};
 use serde::{Serialize, Deserialize};
@@ -96,7 +96,12 @@ impl DownloadCacheRepo for MongoDbWrapper {
         let db = self.client.database(&self.settings.mongodb.database);
         let col = db.collection::<MongoDownloadedMedia>(&self.settings.mongodb.download_collection);
  
-        let filter = doc! ("date_downloaded": doc! { "$gte": convert_date(date_from)?, "$lt": convert_date(date_to)?} );
+        let filter = doc! (
+            "date_downloaded": doc! { 
+                "$gte": DateTime::from_millis(date_from.timestamp_millis()), 
+                "$lt": DateTime::from_millis(date_to.timestamp_millis())
+            } 
+        );
         let mut cursor = col.find(filter,None).await?;
 
         let mut all_media = vec![];
@@ -115,10 +120,10 @@ impl OnlineCacheRepo for MongoDbWrapper {
         let col = db.collection::<MongoOnlineCacheItem>(&self.settings.mongodb.online_collection);
 
         let filter = doc! (
-            "searchName": doc! { "$eq": base_info.name()}, 
+            "searchName": doc! { "$eq": base_info.name() }, 
             // TODO: is this filtering ok with Option<>? seems not, appears as searchYear: null,
-            "searchYear": doc! { "$eq": base_info.year()}, 
-            "mediaType": doc! { "$eq": media_type} 
+            "searchYear": doc! { "$eq": base_info.year() }, 
+            "mediaType": doc! { "$eq": media_type } 
         );
         let mut cursor = col.find(filter,None).await?;
 
@@ -142,16 +147,4 @@ impl OnlineCacheRepo for MongoDbWrapper {
 
         Ok(())
     }
-}
-
-fn convert_date(date_time: NaiveDateTime) -> eyre::Result<DateTime> {
-    DateTime::builder()
-        .year(date_time.year())
-        .month(date_time.month() as u8)
-        .day(date_time.day() as u8)
-        .hour(date_time.hour() as u8)
-        .minute(date_time.minute() as u8)
-        .second(date_time.second() as u8)
-        .build()
-        .wrap_err_with(|| format!("Could not convert to Bson DateTime from {:?}", date_time))
 }
