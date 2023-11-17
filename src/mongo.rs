@@ -26,6 +26,16 @@ impl Into<DownloadedMedia> for MongoDownloadedMedia {
     }
 }
 
+impl From<DownloadedMedia> for MongoDownloadedMedia {
+    fn from(value: DownloadedMedia) -> Self {
+        MongoDownloadedMedia { 
+            file_name: value.file_name, 
+            file_size: value.file_size, 
+            date_downloaded: DateTime::from_millis(value.date_downloaded), 
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct MongoOnlineCacheItem {
     #[serde(rename(serialize = "searchName", deserialize = "searchName"))]
@@ -110,6 +120,19 @@ impl DownloadCacheRepo for MongoDbWrapper {
         }
 
         Ok(all_media)
+    }
+
+    async fn persist(&self, items: Vec<DownloadedMedia>) -> eyre::Result<()> {
+        let db = self.client.database(&self.settings.mongodb.database);
+        let col = db.collection::<MongoDownloadedMedia>(&self.settings.mongodb.download_collection);
+
+        let mongo_items: Vec<MongoDownloadedMedia> = items.into_iter()
+            .map(|i| MongoDownloadedMedia::from(i))
+            .collect();
+
+        col.insert_many(mongo_items, None).await?;
+
+        Ok(())
     }
 }
 
