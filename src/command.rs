@@ -21,7 +21,6 @@ pub fn router() -> Router {
 fn init_commands() -> HashMap<String, CommandsKind> {
     let mut commands = HashMap::new();
     commands.insert(shutdown::KEY.to_owned(), CommandsKind::ShutdownCommand(ShutdownCommand));
-    // TODO: add more commands
 
     commands
 }
