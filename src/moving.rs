@@ -236,3 +236,12 @@ fn clean_media_src(settings: &Settings, path_str: &str) -> eyre::Result<()> {
 
     files::delete_dir(path)
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[tokio::test]
+    async fn some_test() {
+        todo!()
+    }
+}
