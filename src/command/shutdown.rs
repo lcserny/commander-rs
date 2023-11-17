@@ -1,22 +1,22 @@
-use std::{process::Command, env};
+use std::{env, process};
 
 use async_trait::async_trait;
 use tracing::info;
 
-use super::{CommandExecutor, CommandResp, Status};
+use super::{Command, CommandResp, Status};
 
 pub const KEY: &str = "shutdown";
 
-pub struct ShutdownCommandExecutor;
+pub struct ShutdownCommand;
 
 #[async_trait]
-impl CommandExecutor for ShutdownCommandExecutor {
+impl Command for ShutdownCommand {
     async fn execute(&self, mut params: Vec<String>) -> eyre::Result<CommandResp> {
         info!("executing shutdown command");
 
         handle_params(&mut params);
 
-        let output = Command::new("shutdown").args(&params).output()?;
+        let output = process::Command::new("shutdown").args(&params).output()?;
         info!("shutdown command executed with exit code {}", output.status);
 
         Ok(CommandResp {

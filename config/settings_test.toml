@@ -7,14 +7,13 @@ database = "videosmover"
 download_collection = "download_cache"
 online_collection = "online_cache"
 
-# TODO: use TMDB append_something param to reduce url used
 [tmdb]
 api_key = "myApiKey"
 base_url = "https://api.themoviedb.org/3/"
-search_movies_url = "{}search/movie?api_key={}&query={}&year={}"
-movie_credits_url = "{}movie/{}/credits?api_key={}"
-search_tv_url = "{}search/tv?api_key={}&query={}&year={}"
-tv_credits_url = "{}tv/{}/credits?api_key={}"
+search_movies_url = "{base_url}search/movie?api_key={api_key}&query={query}&year={year}"
+movie_credits_url = "{base_url}movie/{id}/credits?api_key={api_key}"
+search_tv_url = "{base_url}search/tv?api_key={api_key}&query={query}&year={year}"
+tv_credits_url = "{base_url}tv/{id}/credits?api_key={api_key}"
 
 [online]
 result_limit = 10

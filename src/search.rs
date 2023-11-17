@@ -124,7 +124,7 @@ mod tests {
     use mongodb::{Client, options::ClientOptions};
     use rand::RngCore;
 
-    use crate::{config::init_config, http::ApiContext};
+    use crate::{config::init_config, http::ApiContext, mongo::MongoDbWrapper, db::DbClient};
     use super::search_media;
 
     fn create_file(path: PathBuf, size: usize) {
@@ -182,6 +182,7 @@ mod tests {
       },
     ]
     */
+    // FIXME: sometimes this fails, maybe a inmem fs could fix?
     #[tokio::test]
     async fn check_search_finds_correct_media() {
         let cfg = init_config("config/settings_test", "TST_CMDR").unwrap();
@@ -196,10 +197,12 @@ mod tests {
         create_file(downloads_path.join("nested folder/nested.mp4"), 6);
         create_file(downloads_path.join("1/2/3/4/5/deep.mp4"), 6);
 
-        let ctx = ApiContext { 
-            settings: Arc::new(cfg), 
-            mongo_client: Client::with_options(ClientOptions::builder().build()).unwrap()
-        };
+        let settings = Arc::new(cfg);
+        // TODO: replace with a fake db
+        let mongo_client = Client::with_options(ClientOptions::builder().build()).unwrap();
+        let db_wrapper = MongoDbWrapper::new(mongo_client, settings.clone());
+        let db_client = DbClient::new(Arc::new(db_wrapper));
+        let ctx = ApiContext { settings, db_client };
 
         let videos_json = search_media(Extension(ctx)).await.unwrap();
         let mut videos = videos_json.0;

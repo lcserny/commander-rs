@@ -8,3 +8,5 @@ pub mod mongo;
 pub mod command;
 pub mod moving;
 pub mod rename;
+pub mod db;
+pub mod tests;

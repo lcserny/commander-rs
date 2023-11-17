@@ -4,7 +4,7 @@ use axum::{extract::State, routing::post, Extension, Json, Router};
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 use walkdir::DirEntry;
 
 use crate::{
@@ -42,6 +42,8 @@ pub fn router() -> Router {
 }
 
 async fn move_media( State(episode_regex): State<Arc<Regex>>, ctx: Extension<ApiContext>, Json(req): Json<MediaMoveReq>) -> Json<Vec<MediaMoveError>> {
+    info!("move_media request received with paylod: {:?}", req);
+
     let settings = ctx.settings.clone();
     let file_group = req.file_group;
     let media_path = file_group.path.clone();
@@ -49,6 +51,10 @@ async fn move_media( State(episode_regex): State<Arc<Regex>>, ctx: Extension<Api
     let res = match req.media_type {
         MediaFileType::MOVIE => move_media_and_subs(MovieMedia::new(settings, file_group)),
         MediaFileType::TV => move_media_and_subs(TvMedia::new(settings, file_group, episode_regex)),
+        MediaFileType::UNKNOWN => {
+            warn!("unknown media type provided for media {:?}", file_group);
+            return Json(vec![]);
+        },
     }; 
     
     let mut errors = vec![];

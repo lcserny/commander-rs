@@ -2,30 +2,26 @@ use std::sync::Arc;
 
 use axum::{Router, Extension};
 use eyre::Context;
-use mongodb::Client;
 use tower::ServiceBuilder;
 use tower_http::{trace::TraceLayer, cors::{CorsLayer, Any}};
 use tracing::info;
 
-use crate::{config::Settings, search, error::Error, download, command, moving};
+use crate::{config::Settings, search, error::Error, download, command, moving, rename, db::DbClient};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Clone)]
 pub struct ApiContext {
     pub settings: Arc<Settings>,
-    pub mongo_client: Client,
+    pub db_client: DbClient,
 }
 
-pub async fn serve(settings: Settings, mongo_client: Client) -> eyre::Result<()> {
+pub async fn serve(settings: Arc<Settings>, db_client: DbClient) -> eyre::Result<()> {
     let port = settings.server_port;
 
-    let app = api_router().layer(
+    let app = api_router(settings.clone(), db_client.clone()).layer(
         ServiceBuilder::new()
-            .layer(Extension(ApiContext {
-                mongo_client,
-                settings: Arc::new(settings),
-            }))
+            .layer(Extension(ApiContext { db_client, settings, }))
             .layer(TraceLayer::new_for_http()),
     );
 
@@ -45,10 +41,11 @@ fn cors_layer() -> CorsLayer {
         .allow_credentials(false)
 }
 
-fn api_router() -> Router {
+fn api_router(settings: Arc<Settings>, db_client: DbClient) -> Router {
     search::router()
         .merge(download::router())
         .merge(command::router())
         .merge(moving::router())
+        .merge(rename::router(settings, db_client))
         .layer(cors_layer())
 }

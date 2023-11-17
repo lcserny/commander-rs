@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use chrono::{NaiveDate, Days, NaiveDateTime, NaiveTime};
 use tracing::info;
 
-use crate::{http::{ApiContext, self}, mongo::MongoDownloadsCacheRetriever};
+use crate::http::{ApiContext, self};
 
 #[derive(Serialize, Debug)]
 pub struct DownloadedMedia {
@@ -22,7 +22,7 @@ struct DownloadsCompletedParams {
 }
 
 #[async_trait]
-pub trait DownloadCacheRetriever {
+pub trait DownloadCacheRepo: Send + Sync {
     async fn retrieve_all_by_date_range(&self, date_from: NaiveDateTime, date_to: NaiveDateTime) -> eyre::Result<Vec<DownloadedMedia>>;
 }
 
@@ -38,10 +38,8 @@ async fn downloads_completed(ctx: Extension<ApiContext>, Query(params): Query<Do
     let date_from = NaiveDateTime::new(date, time);
     let date_to = NaiveDateTime::new(date, time).checked_add_days(Days::new(1)).unwrap();
 
-    let client = ctx.mongo_client.clone();
-    let settings = ctx.settings.clone();
-    let retriever = MongoDownloadsCacheRetriever::new(client, settings);
-    let media = retriever.retrieve_all_by_date_range(date_from, date_to).await?;
+    let media = ctx.db_client.download_cache_repo()
+        .retrieve_all_by_date_range(date_from, date_to).await?;
 
     Ok(Json(media))
 }

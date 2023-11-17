@@ -77,6 +77,7 @@ pub struct Settings {
 }
 
 pub fn init_logging(log_file_path: &str) -> eyre::Result<()> { 
+    // FIXME: this does not open already existing fiile correctly
     let file_appender = OpenOptions::new().create(true).write(true).open(log_file_path)?;
     tracing_subscriber::fmt().with_writer(file_appender).init(); 
     Ok(())
