@@ -25,9 +25,21 @@ fn init_commands() -> HashMap<String, CommandsKind> {
     commands
 }
 
+struct StubCommand {
+    status: Status,
+}
+
+#[async_trait]
+impl Command for StubCommand {
+    async fn execute(&self, mut _params: Vec<String>) -> eyre::Result<CommandResp> {
+        Ok(CommandResp { status: self.status.clone() })
+    }
+}
+
 #[enum_dispatch]
 enum CommandsKind {
     ShutdownCommand,
+    StubCommand,
 }
 
 #[async_trait]
@@ -47,7 +59,7 @@ pub struct CommandResp {
     pub status: Status,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum Status {
     Success,
     NotFound,
@@ -73,16 +85,23 @@ async fn execute_cmd(
 
 #[cfg(test)]
 mod tests {
+    use std::{collections::HashMap, sync::Arc};
 
-    #[test]
-    fn commands_execute_correctly() {
-        // TODO
-        // init commands with a fake command (need to add it to enum)
-            // create fake command that can be verified, has resp SUCCESS or so given in constructor
+    use axum::{Json, extract::State};
 
-        // create req
-        // call axum handler
+    use super::{CommandsKind, Status, StubCommand, CommandReq, execute_cmd};
 
-        // check resp is the expected one
+    #[tokio::test]
+    async fn commands_execute_correctly() {
+        let stub_cmd = "stub";
+        let status = Status::Success;
+
+        let mut commands = HashMap::new();
+        commands.insert(stub_cmd.to_owned(), CommandsKind::StubCommand(StubCommand { status: status.clone() }));
+        let req = CommandReq { name: stub_cmd.to_owned(), params: None };
+
+        let resp = execute_cmd(State(Arc::new(commands)), Json(req)).await.unwrap();
+
+        assert_eq!(status, resp.status);
     }
 }
