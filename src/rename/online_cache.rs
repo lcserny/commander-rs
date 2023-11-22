@@ -59,11 +59,23 @@ impl Renamer for OnlineCacheRenamer {
 }
 
 fn to_date(millis: i64) -> String {
-    match NaiveDateTime::from_timestamp_opt(millis, 0) {
+    match NaiveDateTime::from_timestamp_millis(millis) {
         Some(n) => {
             let date_time: DateTime<Utc> = DateTime::from_naive_utc_and_offset(n, Utc);
             date_time.format("%Y-%m-%d").to_string()
         },
         None => String::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::to_date;
+
+    #[test]
+    fn date_conversion() {
+        let millis = 1700092800000;
+        let str_date = to_date(millis);
+        assert_eq!("2023-11-16".to_owned(), str_date);
     }
 }

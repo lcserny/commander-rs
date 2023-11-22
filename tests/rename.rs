@@ -138,6 +138,7 @@ mod cache_tests {
 
         assert_eq!(1, options.descriptions().len());
         assert_eq!(desc.to_owned(), options.descriptions()[0].description);
+        assert_eq!("1970-01-01".to_owned(), options.descriptions()[0].date);
     }
 
     #[tokio::test]
