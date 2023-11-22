@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use inflector::Inflector;
 use regex::Regex;
 use tracing::warn;
 
-use crate::config::Settings;
+use crate::{config::Settings, uppercase_words};
 
 use super::MediaDescription;
 
@@ -47,13 +46,11 @@ pub struct NameGenerator {
 
 impl NameGenerator {
     pub fn new(settings: Arc<Settings>) -> Self {
-        // TODO: create regexes, careful with double backslashes in config, remove those
         let name_trim_regexes = settings.rename.trim_regex.iter()
             .map(|r| Regex::new(r).unwrap())
             .collect();
 
         NameGenerator { 
-            // TODO: check if correct with the backslashes?
             title_regex: Regex::new(r"^\s*(?<name>[a-zA-Z0-9-\s]+)\s\((?<date>(\d{4})(-\d{1,2}-\d{1,2})?)\)$").unwrap(),
             pre_normalize_name_regex: Regex::new(r"^\s*(?<name>[a-zA-Z0-9-\s]+)\s\((?<year>\d{4})(-\d{1,2}-\d{1,2})?\)$").unwrap(),
             special_chars_regex: Regex::new(r"[^a-zA-Z0-9-\s]").unwrap(),
@@ -79,7 +76,7 @@ impl NameGenerator {
         name = name.replace("&", "and");
         name = self.special_chars_regex.replace_all(&name, " ").to_string();
         name = self.space_merge_regex.replace_all(&name, " ").to_string();
-        name = name.trim().to_title_case();
+        name = uppercase_words(&name.trim());
 
         match self.year_regex.find(&name) {
             Some(c) => {

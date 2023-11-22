@@ -10,9 +10,9 @@ use crate::{http::{self}, config::Settings, db::DbClient};
 
 use self::{name::{BaseInfo, NameGenerator}, disk::DiskRenamer, online_cache::OnlineCacheRenamer, tmdb::{TmdbRenamer, TmdbAPI}};
 
-mod tmdb;
+pub mod tmdb;
 pub mod online_cache;
-mod disk;
+pub mod disk;
 pub mod name;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
@@ -44,7 +44,7 @@ impl ToString for MediaFileType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MediaRenameOrigin {
     DISK,
     NAME,
@@ -70,16 +70,24 @@ impl RenamedMediaOptions {
     pub fn new(origin: MediaRenameOrigin, descriptions: Vec<MediaDescription>) -> Self {
         RenamedMediaOptions { origin, descriptions }
     }
+
+    pub fn descriptions(&self) -> &Vec<MediaDescription> {
+        &self.descriptions
+    }
+
+    pub fn origin(&self) -> MediaRenameOrigin {
+        self.origin
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MediaDescription {
     #[serde(rename(serialize = "posterUrl", deserialize = "posterUrl"))]
-    poster_url: String,
-    title: String,
-    date: String,
-    description: String,
-    cast: Vec<String>,
+    pub poster_url: String,
+    pub title: String,
+    pub date: String,
+    pub description: String,
+    pub cast: Vec<String>,
 }
 
 #[async_trait]
@@ -146,4 +154,28 @@ async fn produce_rename_options(base_info: BaseInfo, renamers: &BTreeMap<Renamer
         }
     }
     RenamedMediaOptions::new(MediaRenameOrigin::NAME, generator.generate_media_descriptions(vec![base_info.formatted()]))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{sync::Arc, any::Any};
+
+    use crate::{tests::{create_test_settings, EmptyDb}, db::DbClient, rename::{online_cache::OnlineCacheRenamer, tmdb::{TmdbRenamer, TmdbAPI}, RenamerKind}};
+
+    use super::{RenamersContext, disk::DiskRenamer};
+
+    #[test]
+    fn commands_execute_in_correct_order() {
+        let settings = Arc::new(create_test_settings());
+        let db_client = DbClient::new(Arc::new(EmptyDb));
+        let ctx = RenamersContext::new(settings.clone(), db_client.clone());
+
+        let first = ctx.renamers.get(&0).unwrap();
+        let second = ctx.renamers.get(&1).unwrap();
+        let third = ctx.renamers.get(&2).unwrap();
+
+        assert_eq!(RenamerKind::DiskRenamer(DiskRenamer::new(settings.clone())).type_id(), first.type_id());
+        assert_eq!(RenamerKind::OnlineCacheRenamer(OnlineCacheRenamer::new(db_client.clone())).type_id(), second.type_id());
+        assert_eq!(RenamerKind::TmdbRenamer(TmdbRenamer::new(settings.clone(), TmdbAPI::new(settings), db_client)).type_id(), third.type_id());
+    }
 }

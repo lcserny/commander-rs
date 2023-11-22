@@ -7,8 +7,6 @@ use commander::{
 use eyre::Result;
 use mongodb::Client;
 
-// TODO: add tests
-
 #[tokio::main]
 async fn main() -> Result<()> {
     init_logging("commander.log")?;

@@ -1,16 +1,17 @@
-use std::{sync::Arc, path::Path};
+use std::{sync::Arc, path::Path, cmp::max};
 
 use async_trait::async_trait;
 use edit_distance::edit_distance;
 use eyre::eyre;
 use regex::Regex;
-use tracing::{warn, info};
+use tracing::info;
 use walkdir::DirEntry;
 
 use crate::{config::Settings, files};
 
 use super::{Renamer, RenamedMediaOptions, name::{BaseInfo, NameGenerator}, MediaFileType, MediaRenameOrigin};
 
+#[derive(Debug)]
 struct DiskPath {
     file_name: String,
     trimmed_file_name: String,
@@ -64,7 +65,6 @@ impl Renamer for DiskRenamer {
             .filter(|d| exclude_unsimilar(d, self.settings.rename.similarity_percent, base_info.name()))
             .collect::<Vec<DiskPath>>();
 
-        // TODO: is this sorting highest similarity first?
         name_variants.sort_by(|a, b| a.similarity.cmp(&b.similarity));
 
         let name_variants: Vec<String> = name_variants.into_iter()
@@ -79,21 +79,14 @@ impl Renamer for DiskRenamer {
     }
 }
 
-// TODO: is this calculating ok? maybe in tests don't log to file, but to console
 fn exclude_unsimilar(disk_path: &DiskPath, similarity_percent: u8, name: &str) -> bool {
-    let bigger = std::cmp::max(disk_path.trimmed_file_name.len(), name.len());
-    match u8::try_from((bigger - disk_path.similarity) / bigger * 100) {
-        Ok(calculated_similarity) => {
-            if calculated_similarity >= similarity_percent {
-                info!("for path {}, the disk path {} is {}% similar with distance of {}", 
-                    name, &disk_path.trimmed_file_name, calculated_similarity, disk_path.similarity);
-                return true;
-            }
-            false
-        },
-        Err(e) => {
-            warn!("could not convert to u8 {:?}", e);
-            false
-        },
+    let bigger = max(disk_path.trimmed_file_name.len(), name.len());
+    let calculated_similarity = (bigger - disk_path.similarity) as f64 / bigger as f64 * 100 as f64;
+
+    if calculated_similarity as i64 >= similarity_percent as i64 {
+        info!("for path {:?}, the disk path {:?} is {}% similar with distance of {}", 
+            name, &disk_path.trimmed_file_name, calculated_similarity, disk_path.similarity);
+        return true;
     }
+    false
 }

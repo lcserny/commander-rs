@@ -40,6 +40,11 @@ fn walk(path: &Path, max_depth: u8, options: WalkOptions) -> eyre::Result<Vec<Di
 }
 
 pub fn move_files(src: &Path, dest: &Path) -> eyre::Result<()> {
+    match dest.parent() {
+        Some(p) => fs::create_dir_all(p)?,
+        None => (),
+    };
+
     fs::rename(src, dest).wrap_err_with(|| 
         format!("could not move path {} to {}", src.to_string_lossy(), dest.to_string_lossy()))
 }

@@ -40,9 +40,9 @@ impl From<DownloadedMedia> for MongoDownloadedMedia {
 struct MongoOnlineCacheItem {
     #[serde(rename(serialize = "searchName", deserialize = "searchName"))]
     search_name: String,
-    #[serde(rename(serialize = "searchYear", deserialize = "searchName"))]
+    #[serde(rename(serialize = "searchYear", deserialize = "searchYear"))]
     search_year: Option<i32>,
-    #[serde(rename(serialize = "coverPath", deserialize = "searchName"))]
+    #[serde(rename(serialize = "coverPath", deserialize = "coverPath"))]
     cover_path: String,
     title: String,
     date: DateTime,
@@ -142,12 +142,19 @@ impl OnlineCacheRepo for MongoDbWrapper {
         let db = self.client.database(&self.settings.mongodb.database);
         let col = db.collection::<MongoOnlineCacheItem>(&self.settings.mongodb.online_collection);
 
-        let filter = doc! (
+        let mut filter = doc! (
             "searchName": doc! { "$eq": base_info.name() }, 
-            // TODO: is this filtering ok with Option<>? seems not, appears as searchYear: null,
-            "searchYear": doc! { "$eq": base_info.year() }, 
             "mediaType": doc! { "$eq": media_type } 
         );
+
+        match base_info.year() {
+            Some(y) => {
+                filter.entry("searchYear".to_owned())
+                    .or_insert(Bson::Document(doc! { "$eq": y }));
+            },
+            None => (),
+        }
+
         let mut cursor = col.find(filter,None).await?;
 
         let mut all_media = vec![];

@@ -2,6 +2,7 @@ use std::{ffi::OsStr, path::Path, sync::Arc};
 
 use axum::{extract::State, routing::post, Extension, Json, Router};
 
+use eyre::eyre;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
@@ -11,37 +12,40 @@ use crate::{
     config::Settings, files, http::ApiContext, rename::MediaFileType, search::MediaFileGroup,
 };
 
-const SUBS_DIR: &str = "Subs";
-const EPISODE_SEGMENT_REGEX: &str = r".*[eE](\d{1,2}).*";
+pub const SUBS_DIR: &str = "Subs";
+pub const EPISODE_SEGMENT_REGEX: &str = r".*[eE](\d{1,2}).*";
 
 #[derive(Debug, Serialize, Deserialize)]
-struct MediaMoveReq {
+pub struct MediaMoveReq {
     #[serde(rename(serialize = "fileGroup", deserialize = "fileGroup"))]
-    file_group: MediaFileGroup,
+    pub file_group: MediaFileGroup,
     #[serde(rename(serialize = "type", deserialize = "type"))]
-    media_type: MediaFileType,
+    pub media_type: MediaFileType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MediaMoveError {
     #[serde(rename(serialize = "mediaPath", deserialize = "mediaPath"))]
-    media_path: String,
-    error: String,
+    pub media_path: String,
+    pub error: String,
 }
 
 impl MediaMoveError {
     fn new(media_path: String, error: eyre::Report) -> Self {
-        MediaMoveError { media_path, error: error.to_string(), }
+        MediaMoveError {
+            media_path,
+            error: error.to_string(),
+        }
     }
 }
 
 pub fn router() -> Router {
     Router::new().route( "/api/v1/media-moves", post(move_media)
-        .with_state(Arc::new(Regex::new(EPISODE_SEGMENT_REGEX).unwrap())),
-    )
+        .with_state(Arc::new(Regex::new(EPISODE_SEGMENT_REGEX).unwrap())))
 }
 
-async fn move_media( State(episode_regex): State<Arc<Regex>>, ctx: Extension<ApiContext>, Json(req): Json<MediaMoveReq>) -> Json<Vec<MediaMoveError>> {
+pub async fn move_media( State(episode_regex): State<Arc<Regex>>,
+        ctx: Extension<ApiContext>, Json(req): Json<MediaMoveReq>, ) -> Json<Vec<MediaMoveError>> {
     info!("move_media request received with paylod: {:?}", req);
 
     let settings = ctx.settings.clone();
@@ -54,9 +58,9 @@ async fn move_media( State(episode_regex): State<Arc<Regex>>, ctx: Extension<Api
         MediaFileType::UNKNOWN => {
             warn!("unknown media type provided for media {:?}", file_group);
             return Json(vec![]);
-        },
-    }; 
-    
+        }
+    };
+
     let mut errors = vec![];
     if let Err(e) = res {
         errors.push(MediaMoveError::new(media_path, e));
@@ -80,13 +84,17 @@ struct MovieMedia {
 
 impl MovieMedia {
     fn new(settings: Arc<Settings>, file_group: MediaFileGroup) -> Self {
-        MovieMedia { settings, file_group, }
+        MovieMedia {
+            settings,
+            file_group,
+        }
     }
 }
 
 impl Media for MovieMedia {
     fn already_exists(&self) -> bool {
-        let movie_path = Path::new(&self.settings.filesystem.movies_path).join(&self.file_group.name);
+        let movie_path =
+            Path::new(&self.settings.filesystem.movies_path).join(&self.file_group.name);
         movie_path.exists() && movie_path.is_dir()
     }
 
@@ -121,7 +129,11 @@ struct TvMedia {
 
 impl TvMedia {
     fn new(settings: Arc<Settings>, file_group: MediaFileGroup, episode_regex: Arc<Regex>) -> Self {
-        TvMedia { settings, file_group, episode_regex, }
+        TvMedia {
+            settings,
+            file_group,
+            episode_regex,
+        }
     }
 }
 
@@ -165,15 +177,18 @@ impl Media for TvMedia {
 
 fn move_media_and_subs<M: Media>(media: M) -> eyre::Result<()> {
     if media.already_exists() {
-        info!("media with path already exists: {}", &media.file_group().path);
-        return Ok(());
+        let msg = format!( "media with path already exists: {}", &media.file_group().path);
+        warn!(msg);
+        return Err(eyre!(msg));
     }
 
     let dest_root = media.dest_root();
 
     for video in &media.file_group().videos {
         let media_src = Path::new(&media.file_group().path).join(video);
-        let media_dest = Path::new(dest_root).join(&media.file_group().name).join(video);
+        let media_dest = Path::new(dest_root)
+            .join(&media.file_group().name)
+            .join(video);
         files::move_files(&media_src, &media_dest)?;
     }
 
@@ -205,8 +220,11 @@ fn move_media_and_subs<M: Media>(media: M) -> eyre::Result<()> {
 }
 
 fn exclude_non_subs(settings: &Settings, sub: &DirEntry) -> bool {
-    settings.mv.subs_ext.iter().any(|ext| 
-        match sub.path().extension() {
+    settings
+        .mv
+        .subs_ext
+        .iter()
+        .any(|ext| match sub.path().extension() {
             Some(sub_ext) => OsStr::new(ext) == sub_ext,
             None => false,
         })
@@ -217,7 +235,7 @@ fn clean_media_src(settings: &Settings, path_str: &str) -> eyre::Result<()> {
         || &settings.filesystem.movies_path == path_str
         || &settings.filesystem.tv_path == path_str
     {
-        info!("cleaning aborted, media src dir is important folder: {}", path_str);
+        info!( "cleaning aborted, media src dir is important folder: {}", path_str);
         return Ok(());
     }
 
@@ -235,13 +253,4 @@ fn clean_media_src(settings: &Settings, path_str: &str) -> eyre::Result<()> {
     }
 
     files::delete_dir(path)
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[tokio::test]
-    async fn some_test() {
-        todo!()
-    }
 }

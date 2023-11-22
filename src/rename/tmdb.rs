@@ -23,15 +23,15 @@ struct MovieResults {
     results: Vec<Movie>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Movie {
-    title: String,
-    poster_path: String,
-    release_date: String,
-    overview: String,
-    id: i32,
+    pub title: String,
+    pub poster_path: String,
+    pub release_date: String,
+    pub overview: String,
+    pub id: i32,
     #[serde(skip_deserializing)]
-    cast: Vec<String>,
+    pub cast: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,15 +42,15 @@ struct TvResults {
     results: Vec<Tv>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tv {
-    name: String,
-    poster_path: String,
-    first_air_date: String,
-    overview: String,
-    id: i32,
+    pub name: String,
+    pub poster_path: String,
+    pub first_air_date: String,
+    pub overview: String,
+    pub id: i32,
     #[serde(skip_deserializing)]
-    cast: Vec<String>,
+    pub cast: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -168,7 +168,6 @@ impl <S: TmdbSearcher> TmdbRenamer<S> {
     fn convert_movies(&self, movies: Vec<Movie>) -> Vec<MediaDescription> {
         movies.into_iter()
             .map(|m| MediaDescription {
-                // TODO: are these working ok with empty strings? need Option fields?
                 poster_url: self.parse_poster(m.poster_path),
                 title: self.parse_title(m.title),
                 date: m.release_date,
@@ -181,7 +180,6 @@ impl <S: TmdbSearcher> TmdbRenamer<S> {
     fn convert_tv_shows(&self, shows: Vec<Tv>) -> Vec<MediaDescription> {
         shows.into_iter()
             .map(|t| MediaDescription {
-                // TODO: are these working ok with empty strings? need Option fields?
                 poster_url: self.parse_poster(t.poster_path),
                 title: self.parse_title(t.name),
                 date: t.first_air_date,
