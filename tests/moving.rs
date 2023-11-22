@@ -245,5 +245,4 @@ mod tests {
         assert!(Path::new(&settings.filesystem.tv_path).join(name).join(SUBS_DIR)
             .join(format!("{}.{}", subdir, sub)).is_file());
     }
-
 }

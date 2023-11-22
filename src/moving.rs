@@ -206,13 +206,13 @@ fn move_media_and_subs<M: Media>(media: M) -> eyre::Result<()> {
         .filter(|sub| exclude_non_subs(media.settings(), sub))
         .collect();
 
-    if subs.is_empty() {
-        info!("no subs found in subs src {}", &subs_src_str);
-        return Ok(());
-    }
-
-    let subs_dest = Path::new(dest_root).join(&media.file_group().name);
-    media.move_subs(&subs_dest, subs)?;
+    match subs.is_empty() {
+        true => info!("no subs found in subs src {}", &subs_src_str),
+        false => {
+            let subs_dest = Path::new(dest_root).join(&media.file_group().name);
+            media.move_subs(&subs_dest, subs)?;
+        },
+    };
 
     clean_media_src(media.settings(), &media.file_group().path)?;
 
@@ -240,6 +240,8 @@ fn clean_media_src(settings: &Settings, path_str: &str) -> eyre::Result<()> {
     }
 
     let path = Path::new(path_str);
+    warn!("{:#?}", path);
+
     for restricted_path in &settings.mv.restricted_remove_paths {
         match path.iter().last() {
             Some(last_segment) => {
