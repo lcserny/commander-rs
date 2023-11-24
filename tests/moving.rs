@@ -122,6 +122,35 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn moving_happy_path_cleans() {
+        let settings = create_test_settings();
+
+        let name = "some movieeee";
+        let path = PathBuf::from(&settings.filesystem.downloads_path).join("something");
+        let file = "mooveeee.mp4";
+
+        create_file(path.join(file), 6);
+
+        let media = MediaFileGroup {
+            path: path.to_string_lossy().into_owned(),
+            name: name.to_owned(),
+            videos: vec![file.to_owned()],
+        };
+
+        let regex = Arc::new(Regex::new(EPISODE_SEGMENT_REGEX).unwrap());
+        let db_client = DbClient::new(Arc::new(EmptyDb));
+        let settings = Arc::new(settings);
+        let ctx = ApiContext { settings: settings.clone(), db_client, };
+        let req = MediaMoveReq { file_group: media, media_type: MediaFileType::MOVIE, };
+
+        let resp = move_media(State(regex), Extension(ctx), Json(req)).await;
+
+        assert_eq!(0, resp.len());
+        assert!(!path.is_dir());
+        assert!(Path::new(&settings.filesystem.movies_path).join(name).join(file).is_file());
+    }
+
+    #[tokio::test]
     async fn root_downloads_sub_skip() {
         let settings = create_test_settings();
 
