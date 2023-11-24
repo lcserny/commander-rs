@@ -11,20 +11,10 @@ mod tests {
         let status = Status::Success;
 
         let mut commands = HashMap::new();
-        commands.insert(
-            stub_cmd.to_owned(),
-            CommandsKind::StubCommand(StubCommand {
-                status: status.clone(),
-            }),
-        );
-        let req = CommandReq {
-            name: stub_cmd.to_owned(),
-            params: None,
-        };
+        commands.insert( stub_cmd.to_owned(), CommandsKind::StubCommand(StubCommand { status: status.clone() }));
+        let req = CommandReq { name: stub_cmd.to_owned(), params: None };
 
-        let resp = execute_cmd(State(Arc::new(commands)), Json(req))
-            .await
-            .unwrap();
+        let resp = execute_cmd(State(Arc::new(commands)), Json(req)).await.unwrap();
 
         assert_eq!(status, resp.status);
     }

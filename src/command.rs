@@ -13,17 +13,13 @@ use self::shutdown::ShutdownCommand;
 pub mod shutdown;
 
 pub fn router() -> Router {
-    Router::new()
-        .route("/api/v1/commands", post(execute_cmd))
+    Router::new().route("/api/v1/commands", post(execute_cmd))
         .with_state(Arc::new(init_commands()))
 }
 
 fn init_commands() -> HashMap<String, CommandsKind> {
     let mut commands = HashMap::new();
-    commands.insert(
-        shutdown::KEY.to_owned(),
-        CommandsKind::ShutdownCommand(ShutdownCommand),
-    );
+    commands.insert( shutdown::KEY.to_owned(), CommandsKind::ShutdownCommand(ShutdownCommand));
 
     commands
 }
@@ -84,9 +80,7 @@ pub async fn execute_cmd(
         .next()
     {
         Some(cmd) => cmd.execute(req.params.unwrap_or_else(|| vec![])).await?,
-        None => CommandResp {
-            status: Status::NotFound,
-        },
+        None => CommandResp { status: Status::NotFound },
     };
 
     Ok(Json(resp))

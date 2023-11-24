@@ -282,7 +282,6 @@ dependencies = [
  "eyre",
  "futures",
  "mongodb",
- "once_cell",
  "rand",
  "regex",
  "reqwest",
