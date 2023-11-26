@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use chrono::NaiveDateTime;
 
 use futures::TryStreamExt;
-use mongodb::{bson::{DateTime, doc, Bson}, Client};
+use mongodb::{bson::{DateTime, doc, Bson, Document}, Client};
 use serde::{Serialize, Deserialize};
 
 use crate::{download::{DownloadCacheRepo, DownloadedMedia}, config::Settings, rename::{online_cache::{OnlineCacheRepo, OnlineCacheItem}, MediaFileType, name::BaseInfo}};
@@ -136,6 +136,13 @@ impl DownloadCacheRepo for MongoDbWrapper {
     }
 }
 
+fn filter_optional_eq<I: Into<Bson>>(filter: &mut Document, key: &str, val: Option<I>) {
+    match val {
+        Some(y) => { filter.insert(key.to_owned(), Bson::Document(doc! { "$eq": y.into() })); },
+        None => (),
+    }
+}
+
 #[async_trait]
 impl OnlineCacheRepo for MongoDbWrapper {
     async fn retrieve_all_by_base_and_type(&self, base_info: &BaseInfo, media_type: MediaFileType) -> eyre::Result<Vec<OnlineCacheItem>> {
@@ -146,14 +153,7 @@ impl OnlineCacheRepo for MongoDbWrapper {
             "searchName": doc! { "$eq": base_info.name() }, 
             "mediaType": doc! { "$eq": media_type } 
         );
-
-        match base_info.year() {
-            Some(y) => {
-                filter.entry("searchYear".to_owned())
-                    .or_insert(Bson::Document(doc! { "$eq": y }));
-            },
-            None => (),
-        }
+        filter_optional_eq(&mut filter, "searchYear", base_info.year());
 
         let mut cursor = col.find(filter,None).await?;
 
