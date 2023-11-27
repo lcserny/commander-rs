@@ -79,11 +79,8 @@ impl TmdbAPI {
         let client = reqwest::Client::new();
         Self { settings, client }
     }
-}
 
-#[async_trait]
-impl TmdbSearcher for TmdbAPI {
-    async fn search_tv(&self, query: &str, year: Option<i32>) -> eyre::Result<Vec<Tv>> {
+    fn produce_url(&self, search_url: &str, year: Option<i32>, query: &str) -> eyre::Result<String> {
         let year_str = match year {
             Some(y) => y.to_string(),
             None => String::new(),
@@ -92,10 +89,25 @@ impl TmdbSearcher for TmdbAPI {
 
         let replacements: &[&str; 4] = &[&tmdb_cfg.base_url, &tmdb_cfg.api_key, query, &year_str];
         let url_builder = AhoCorasick::new(SEARCH_PATS)?;
-        let url = url_builder.replace_all(&tmdb_cfg.search_tv_url, replacements);
+        Ok(url_builder.replace_all(search_url, replacements))
+    }
+
+    fn produce_credits_url(&self, credits_url: &str, id: String) -> eyre::Result<String> {
+        let tmdb_cfg = &self.settings.tmdb;
+        let replacements: &[&str; 3] = &[&tmdb_cfg.base_url, &id, &tmdb_cfg.api_key];
+        let url_builder = AhoCorasick::new(CREDIT_PATS)?;
+        Ok(url_builder.replace_all(credits_url, replacements))
+    }
+}
+
+#[async_trait]
+impl TmdbSearcher for TmdbAPI {
+    async fn search_tv(&self, query: &str, year: Option<i32>) -> eyre::Result<Vec<Tv>> {
+        let tmdb_cfg = &self.settings.tmdb;
+        let url = self.produce_url(&tmdb_cfg.search_tv_url, year, query)?;
 
         let resp = self.client.get(url).send().await?.text().await?;
-        let mut resp = match serde_json::from_str:: <TvResults>(&resp) {
+        let mut resp = match serde_json::from_str::<TvResults>(&resp) {
             Ok(r) => r,
             Err(e) => {
                 return Err(eyre!("received TV response from TMDB: {:#?}, error {:?}", &resp, e));
@@ -104,13 +116,8 @@ impl TmdbSearcher for TmdbAPI {
 
         for tv in &mut resp.results {
             let id = tv.id.to_string();
-
-            let replacements: &[&str; 3] = &[&tmdb_cfg.base_url, &id, &tmdb_cfg.api_key];
-            let url_builder = AhoCorasick::new(CREDIT_PATS)?;
-            let url = url_builder.replace_all(&tmdb_cfg.tv_credits_url, replacements);
-    
+            let url = self.produce_credits_url(&tmdb_cfg.tv_credits_url, id)?;
             let resp = self.client.get(url).send().await?.json::<Credits>().await?;  
-
             tv.cast = resp.cast.into_iter().map(|p| p.character).collect();
         }
         
@@ -118,18 +125,11 @@ impl TmdbSearcher for TmdbAPI {
     }
 
     async fn search_movie(&self, query: &str, year: Option<i32>) -> eyre::Result<Vec<Movie>> {
-        let year_str = match year {
-            Some(y) => y.to_string(),
-            None => String::new(),
-        };
         let tmdb_cfg = &self.settings.tmdb;
-
-        let replacements: &[&str; 4] = &[&tmdb_cfg.base_url, &tmdb_cfg.api_key, query, &year_str];
-        let url_builder = AhoCorasick::new(SEARCH_PATS)?;
-        let url = url_builder.replace_all(&tmdb_cfg.search_movies_url, replacements);
+        let url = self.produce_url(&tmdb_cfg.search_movies_url, year, query)?;
 
         let resp = self.client.get(url).send().await?.text().await?;
-        let mut resp = match serde_json::from_str:: <MovieResults>(&resp) {
+        let mut resp = match serde_json::from_str::<MovieResults>(&resp) {
             Ok(r) => r,
             Err(e) => {
                 return Err(eyre!("received Movie response from TMDB: {:#?}, error {:?}", &resp, e));
@@ -138,13 +138,8 @@ impl TmdbSearcher for TmdbAPI {
 
         for movie in &mut resp.results {
             let id = movie.id.to_string();
-
-            let replacements: &[&str; 3] = &[&tmdb_cfg.base_url, &id, &tmdb_cfg.api_key];
-            let url_builder = AhoCorasick::new(CREDIT_PATS)?;
-            let url = url_builder.replace_all(&tmdb_cfg.movie_credits_url, replacements);
-    
+            let url = self.produce_credits_url(&tmdb_cfg.movie_credits_url, id)?;
             let resp = self.client.get(url).send().await?.json::<Credits>().await?;  
-
             movie.cast = resp.cast.into_iter().map(|p| p.character).collect();
         }
         
