@@ -251,7 +251,7 @@ mod tmdb_tests {
 
         let movie = Movie { 
             title: title.to_owned(), 
-            poster_path: String::new(), 
+            poster_path: None, 
             release_date: year.unwrap().to_string(), 
             overview: String::new(), 
             id: 0, 
@@ -300,7 +300,7 @@ mod tmdb_tests {
 
         let tv = Tv { 
             name: title.to_owned(), 
-            poster_path: String::new(), 
+            poster_path: Some(String::new()), 
             first_air_date: year.unwrap().to_string(), 
             overview: String::new(), 
             id: 0, 

@@ -26,7 +26,7 @@ struct MovieResults {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Movie {
     pub title: String,
-    pub poster_path: String,
+    pub poster_path: Option<String>,
     pub release_date: String,
     pub overview: String,
     pub id: i32,
@@ -45,7 +45,7 @@ struct TvResults {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tv {
     pub name: String,
-    pub poster_path: String,
+    pub poster_path: Option<String>,
     pub first_air_date: String,
     pub overview: String,
     pub id: i32,
@@ -94,7 +94,13 @@ impl TmdbSearcher for TmdbAPI {
         let url_builder = AhoCorasick::new(SEARCH_PATS)?;
         let url = url_builder.replace_all(&tmdb_cfg.search_tv_url, replacements);
 
-        let mut resp = self.client.get(url).send().await?.json::<TvResults>().await?;
+        let resp = self.client.get(url).send().await?.text().await?;
+        let mut resp = match serde_json::from_str:: <TvResults>(&resp) {
+            Ok(r) => r,
+            Err(e) => {
+                return Err(eyre!("received TV response from TMDB: {:#?}, error {:?}", &resp, e));
+            },
+        };
 
         for tv in &mut resp.results {
             let id = tv.id.to_string();
@@ -122,7 +128,13 @@ impl TmdbSearcher for TmdbAPI {
         let url_builder = AhoCorasick::new(SEARCH_PATS)?;
         let url = url_builder.replace_all(&tmdb_cfg.search_movies_url, replacements);
 
-        let mut resp = self.client.get(url).send().await?.json::<MovieResults>().await?;
+        let resp = self.client.get(url).send().await?.text().await?;
+        let mut resp = match serde_json::from_str:: <MovieResults>(&resp) {
+            Ok(r) => r,
+            Err(e) => {
+                return Err(eyre!("received Movie response from TMDB: {:#?}, error {:?}", &resp, e));
+            },
+        };
 
         for movie in &mut resp.results {
             let id = movie.id.to_string();
@@ -168,7 +180,7 @@ impl <S: TmdbSearcher> TmdbRenamer<S> {
     fn convert_movies(&self, movies: Vec<Movie>) -> Vec<MediaDescription> {
         movies.into_iter()
             .map(|m| MediaDescription {
-                poster_url: self.parse_poster(m.poster_path),
+                poster_url: self.parse_poster(m.poster_path.unwrap_or_default()),
                 title: self.parse_title(m.title),
                 date: m.release_date,
                 description: m.overview,
@@ -180,7 +192,7 @@ impl <S: TmdbSearcher> TmdbRenamer<S> {
     fn convert_tv_shows(&self, shows: Vec<Tv>) -> Vec<MediaDescription> {
         shows.into_iter()
             .map(|t| MediaDescription {
-                poster_url: self.parse_poster(t.poster_path),
+                poster_url: self.parse_poster(t.poster_path.unwrap_or_default()),
                 title: self.parse_title(t.name),
                 date: t.first_air_date,
                 description: t.overview,
