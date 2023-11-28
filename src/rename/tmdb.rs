@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveTime, NaiveDateTime};
 use eyre::eyre;
 use regex::Regex;
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use tracing::warn;
 
 use crate::{db::DbClient, config::Settings};
@@ -98,6 +98,16 @@ impl TmdbAPI {
         let url_builder = AhoCorasick::new(CREDIT_PATS)?;
         Ok(url_builder.replace_all(credits_url, replacements))
     }
+
+    async fn get_request<M: DeserializeOwned>(&self, url: String) -> eyre::Result<M> {
+        let resp = self.client.get(url).send().await?.text().await?;
+        match serde_json::from_str::<M>(&resp) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                return Err(eyre!("received response from TMDB: {:#?}, error {:?}", &resp, e));
+            },
+        }
+    }
 }
 
 #[async_trait]
@@ -105,14 +115,7 @@ impl TmdbSearcher for TmdbAPI {
     async fn search_tv(&self, query: &str, year: Option<i32>) -> eyre::Result<Vec<Tv>> {
         let tmdb_cfg = &self.settings.tmdb;
         let url = self.produce_url(&tmdb_cfg.search_tv_url, year, query)?;
-
-        let resp = self.client.get(url).send().await?.text().await?;
-        let mut resp = match serde_json::from_str::<TvResults>(&resp) {
-            Ok(r) => r,
-            Err(e) => {
-                return Err(eyre!("received TV response from TMDB: {:#?}, error {:?}", &resp, e));
-            },
-        };
+        let mut resp = self.get_request::<TvResults>(url).await?;
 
         for tv in &mut resp.results {
             let id = tv.id.to_string();
@@ -127,14 +130,7 @@ impl TmdbSearcher for TmdbAPI {
     async fn search_movie(&self, query: &str, year: Option<i32>) -> eyre::Result<Vec<Movie>> {
         let tmdb_cfg = &self.settings.tmdb;
         let url = self.produce_url(&tmdb_cfg.search_movies_url, year, query)?;
-
-        let resp = self.client.get(url).send().await?.text().await?;
-        let mut resp = match serde_json::from_str::<MovieResults>(&resp) {
-            Ok(r) => r,
-            Err(e) => {
-                return Err(eyre!("received Movie response from TMDB: {:#?}, error {:?}", &resp, e));
-            },
-        };
+        let mut resp = self.get_request::<MovieResults>(url).await?;
 
         for movie in &mut resp.results {
             let id = movie.id.to_string();
