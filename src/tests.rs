@@ -15,7 +15,7 @@ use crate::{
     download::{DownloadCacheRepo, DownloadedMedia},
     rename::{
         name::BaseInfo,
-        online_cache::{OnlineCacheItem, OnlineCacheRepo},
+        cache::{OnlineCacheItem, OnlineCacheRepo},
         MediaFileType,
     },
 };

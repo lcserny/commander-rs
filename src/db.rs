@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{download::DownloadCacheRepo, rename::online_cache::OnlineCacheRepo};
+use crate::{download::DownloadCacheRepo, rename::cache::OnlineCacheRepo};
 
 // Add more repos as needed
 

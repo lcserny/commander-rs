@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{db::DbClient, config::Settings};
 
-use super::{Renamer, name::BaseInfo, RenamedMediaOptions, MediaFileType, MediaDescription, online_cache::OnlineCacheItem, MediaRenameOrigin};
+use super::{Renamer, name::BaseInfo, RenamedMediaOptions, MediaFileType, MediaDescription, cache::OnlineCacheItem, MediaRenameOrigin};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExternalMedia {

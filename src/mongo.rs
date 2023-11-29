@@ -7,7 +7,7 @@ use futures::TryStreamExt;
 use mongodb::{bson::{DateTime, doc, Bson, Document}, Client};
 use serde::{Serialize, Deserialize};
 
-use crate::{download::{DownloadCacheRepo, DownloadedMedia}, config::Settings, rename::{online_cache::{OnlineCacheRepo, OnlineCacheItem}, MediaFileType, name::BaseInfo}};
+use crate::{download::{DownloadCacheRepo, DownloadedMedia}, config::Settings, rename::{cache::{OnlineCacheRepo, OnlineCacheItem}, MediaFileType, name::BaseInfo}};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct MongoDownloadedMedia {

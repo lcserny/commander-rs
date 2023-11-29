@@ -24,18 +24,18 @@ pub trait OnlineCacheRepo: Send + Sync {
     async fn save_items(&self, items: Vec<OnlineCacheItem>) -> eyre::Result<()>;
 }
 
-pub struct OnlineCacheRenamer {
+pub struct CacheRenamer {
     db_client: DbClient,
 }
 
-impl OnlineCacheRenamer {
+impl CacheRenamer {
     pub fn new(db_client: DbClient) -> Self {
-        OnlineCacheRenamer { db_client }
+        CacheRenamer { db_client }
     }
 }
 
 #[async_trait]
-impl Renamer for OnlineCacheRenamer {
+impl Renamer for CacheRenamer {
     async fn find_options(&self, base_info: &BaseInfo, media_type: MediaFileType) -> eyre::Result<Option<RenamedMediaOptions>> {
         let items = self.db_client.online_cache_repo()
             .retrieve_all_by_base_and_type(&base_info, media_type).await?;

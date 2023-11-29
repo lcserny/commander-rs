@@ -8,10 +8,10 @@ use tracing::{info, warn};
 
 use crate::{http::{self}, config::Settings, db::DbClient, tmdb::TmdbAPI};
 
-use self::{name::{BaseInfo, NameGenerator}, disk::DiskRenamer, online_cache::OnlineCacheRenamer, external::ExternalRenamer};
+use self::{name::{BaseInfo, NameGenerator}, disk::DiskRenamer, cache::CacheRenamer, external::ExternalRenamer};
 
 pub mod external;
-pub mod online_cache;
+pub mod cache;
 pub mod disk;
 pub mod name;
 
@@ -101,8 +101,8 @@ type RenamerOrder = usize;
 #[enum_dispatch]
 enum RenamerKind {
     DiskRenamer,
-    OnlineCacheRenamer,
-    TmdbRenamer(ExternalRenamer<TmdbAPI>),
+    CacheRenamer,
+    ExternalRenamer(ExternalRenamer<TmdbAPI>),
 }
 
 struct RenamersContext {
@@ -114,8 +114,8 @@ impl RenamersContext {
     fn new(settings: Arc<Settings>, db_client: DbClient) -> Self {
         let mut renamers = BTreeMap::new();
         renamers.insert(0, RenamerKind::DiskRenamer(DiskRenamer::new(settings.clone())));
-        renamers.insert(1, RenamerKind::OnlineCacheRenamer(OnlineCacheRenamer::new(db_client.clone())));
-        renamers.insert(2, RenamerKind::TmdbRenamer(ExternalRenamer::new(settings.clone(), TmdbAPI::new(settings.clone()), db_client)));
+        renamers.insert(1, RenamerKind::CacheRenamer(CacheRenamer::new(db_client.clone())));
+        renamers.insert(2, RenamerKind::ExternalRenamer(ExternalRenamer::new(settings.clone(), TmdbAPI::new(settings.clone()), db_client)));
 
         RenamersContext { 
             renamers, 
@@ -160,7 +160,7 @@ async fn produce_rename_options(base_info: BaseInfo, renamers: &BTreeMap<Renamer
 mod tests {
     use std::{sync::Arc, any::Any};
 
-    use crate::{tests::{create_test_settings, EmptyDb}, db::DbClient, rename::{online_cache::OnlineCacheRenamer, external::ExternalRenamer, RenamerKind}, tmdb::TmdbAPI};
+    use crate::{tests::{create_test_settings, EmptyDb}, db::DbClient, rename::{cache::CacheRenamer, external::ExternalRenamer, RenamerKind}, tmdb::TmdbAPI};
 
     use super::{RenamersContext, disk::DiskRenamer};
 
@@ -175,7 +175,7 @@ mod tests {
         let third = ctx.renamers.get(&2).unwrap();
 
         assert_eq!(RenamerKind::DiskRenamer(DiskRenamer::new(settings.clone())).type_id(), first.type_id());
-        assert_eq!(RenamerKind::OnlineCacheRenamer(OnlineCacheRenamer::new(db_client.clone())).type_id(), second.type_id());
-        assert_eq!(RenamerKind::TmdbRenamer(ExternalRenamer::new(settings.clone(), TmdbAPI::new(settings), db_client)).type_id(), third.type_id());
+        assert_eq!(RenamerKind::CacheRenamer(CacheRenamer::new(db_client.clone())).type_id(), second.type_id());
+        assert_eq!(RenamerKind::ExternalRenamer(ExternalRenamer::new(settings.clone(), TmdbAPI::new(settings), db_client)).type_id(), third.type_id());
     }
 }

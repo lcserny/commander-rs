@@ -84,7 +84,7 @@ mod disk_tests {
 mod cache_tests {
     use std::sync::Arc;
 
-    use commander::{tests::{create_mongo_image, create_test_settings, MONGO_USER, MONGO_PASS, MONGO_PORT}, mongo::MongoDbWrapper, db::DbClient, rename::{name::BaseInfo, online_cache::{OnlineCacheItem, OnlineCacheRenamer}, MediaFileType::{MOVIE, TV}, Renamer}};
+    use commander::{tests::{create_mongo_image, create_test_settings, MONGO_USER, MONGO_PASS, MONGO_PORT}, mongo::MongoDbWrapper, db::DbClient, rename::{name::BaseInfo, cache::{OnlineCacheItem, CacheRenamer}, MediaFileType::{MOVIE, TV}, Renamer}};
     use mongodb::Client;
     use testcontainers::clients;
 
@@ -130,7 +130,7 @@ mod cache_tests {
 
         db_client.online_cache_repo().save_items(vec![item1, item2]).await.unwrap();
 
-        let renamer = OnlineCacheRenamer::new(db_client);
+        let renamer = CacheRenamer::new(db_client);
         let options = renamer.find_options(&base,MOVIE).await.unwrap();
 
         assert!(options.is_some());
@@ -183,7 +183,7 @@ mod cache_tests {
 
         db_client.online_cache_repo().save_items(vec![item1, item2]).await.unwrap();
 
-        let renamer = OnlineCacheRenamer::new(db_client);
+        let renamer = CacheRenamer::new(db_client);
         let options = renamer.find_options(&base,MOVIE).await.unwrap();
 
         assert!(options.is_some());
