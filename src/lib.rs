@@ -8,6 +8,7 @@ pub mod http;
 pub mod mongo;
 pub mod moving;
 pub mod rename;
+pub mod tmdb;
 pub mod search;
 pub mod tests;
 

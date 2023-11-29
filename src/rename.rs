@@ -6,11 +6,11 @@ use enum_dispatch::enum_dispatch;
 use serde::{Serialize, Deserialize};
 use tracing::{info, warn};
 
-use crate::{http::{self}, config::Settings, db::DbClient};
+use crate::{http::{self}, config::Settings, db::DbClient, tmdb::TmdbAPI};
 
-use self::{name::{BaseInfo, NameGenerator}, disk::DiskRenamer, online_cache::OnlineCacheRenamer, tmdb::{TmdbRenamer, TmdbAPI}};
+use self::{name::{BaseInfo, NameGenerator}, disk::DiskRenamer, online_cache::OnlineCacheRenamer, external::ExternalRenamer};
 
-pub mod tmdb;
+pub mod external;
 pub mod online_cache;
 pub mod disk;
 pub mod name;
@@ -49,7 +49,7 @@ pub enum MediaRenameOrigin {
     DISK,
     NAME,
     CACHE,
-    TMDB,
+    EXTERNAL,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -102,7 +102,7 @@ type RenamerOrder = usize;
 enum RenamerKind {
     DiskRenamer,
     OnlineCacheRenamer,
-    TmdbRenamer(TmdbRenamer<TmdbAPI>),
+    TmdbRenamer(ExternalRenamer<TmdbAPI>),
 }
 
 struct RenamersContext {
@@ -115,7 +115,7 @@ impl RenamersContext {
         let mut renamers = BTreeMap::new();
         renamers.insert(0, RenamerKind::DiskRenamer(DiskRenamer::new(settings.clone())));
         renamers.insert(1, RenamerKind::OnlineCacheRenamer(OnlineCacheRenamer::new(db_client.clone())));
-        renamers.insert(2, RenamerKind::TmdbRenamer(TmdbRenamer::new(settings.clone(), TmdbAPI::new(settings.clone()), db_client)));
+        renamers.insert(2, RenamerKind::TmdbRenamer(ExternalRenamer::new(settings.clone(), TmdbAPI::new(settings.clone()), db_client)));
 
         RenamersContext { 
             renamers, 
@@ -160,7 +160,7 @@ async fn produce_rename_options(base_info: BaseInfo, renamers: &BTreeMap<Renamer
 mod tests {
     use std::{sync::Arc, any::Any};
 
-    use crate::{tests::{create_test_settings, EmptyDb}, db::DbClient, rename::{online_cache::OnlineCacheRenamer, tmdb::{TmdbRenamer, TmdbAPI}, RenamerKind}};
+    use crate::{tests::{create_test_settings, EmptyDb}, db::DbClient, rename::{online_cache::OnlineCacheRenamer, external::ExternalRenamer, RenamerKind}, tmdb::TmdbAPI};
 
     use super::{RenamersContext, disk::DiskRenamer};
 
@@ -176,6 +176,6 @@ mod tests {
 
         assert_eq!(RenamerKind::DiskRenamer(DiskRenamer::new(settings.clone())).type_id(), first.type_id());
         assert_eq!(RenamerKind::OnlineCacheRenamer(OnlineCacheRenamer::new(db_client.clone())).type_id(), second.type_id());
-        assert_eq!(RenamerKind::TmdbRenamer(TmdbRenamer::new(settings.clone(), TmdbAPI::new(settings), db_client)).type_id(), third.type_id());
+        assert_eq!(RenamerKind::TmdbRenamer(ExternalRenamer::new(settings.clone(), TmdbAPI::new(settings), db_client)).type_id(), third.type_id());
     }
 }

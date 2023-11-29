@@ -198,32 +198,32 @@ mod tmdb_tests {
     use std::sync::Arc;
 
     use async_trait::async_trait;
-    use commander::{tests::{create_test_settings, create_mongo_image, MONGO_USER, MONGO_PASS, MONGO_PORT}, mongo::MongoDbWrapper, db::DbClient, rename::{name::BaseInfo, tmdb::{TmdbRenamer, TmdbSearcher, Tv, Movie}, Renamer, MediaFileType::{MOVIE, TV}, MediaRenameOrigin}};
+    use commander::{tests::{create_test_settings, create_mongo_image, MONGO_USER, MONGO_PASS, MONGO_PORT}, mongo::MongoDbWrapper, db::DbClient, rename::{name::BaseInfo, external::{ExternalRenamer, ExternalSearcher, ExternalMedia}, Renamer, MediaFileType::{MOVIE, TV}, MediaRenameOrigin}};
     use mongodb::Client;
     use testcontainers::clients;
 
     struct FakeSearcher {
-        tvs: Vec<Tv>,
-        movies: Vec<Movie>,
+        tvs: Vec<ExternalMedia>,
+        movies: Vec<ExternalMedia>,
         fail: bool,
     }
 
     impl FakeSearcher {
-        fn new(tvs: Vec<Tv>, movies: Vec<Movie>, fail: bool) -> Self {
+        fn new(tvs: Vec<ExternalMedia>, movies: Vec<ExternalMedia>, fail: bool) -> Self {
             FakeSearcher { tvs, movies, fail }
         }
     }
 
     #[async_trait]
-    impl TmdbSearcher for FakeSearcher {
-        async fn search_tv(&self, _query: &str, _year: Option<i32>) -> eyre::Result<Vec<Tv>> {
+    impl ExternalSearcher for FakeSearcher {
+        async fn search_tv(&self, _query: &str, _year: Option<i32>) -> eyre::Result<Vec<ExternalMedia>> {
             match self.fail {
                 true => Err(eyre::eyre!("expected error")),
                 false => Ok(self.tvs.clone()),
             }
         }
 
-        async fn search_movie(&self, _query: &str, _year: Option<i32>) -> eyre::Result<Vec<Movie>> {
+        async fn search_movie(&self, _query: &str, _year: Option<i32>) -> eyre::Result<Vec<ExternalMedia>> {
             match self.fail {
                 true => Err(eyre::eyre!("expected error")),
                 false => Ok(self.movies.clone()),
@@ -249,11 +249,11 @@ mod tmdb_tests {
         let title = "fight club";
         let year = Some(2000);
 
-        let movie = Movie { 
+        let movie = ExternalMedia { 
             title: title.to_owned(), 
             poster_path: None, 
-            release_date: year.unwrap().to_string(), 
-            overview: String::new(), 
+            date: year.unwrap().to_string(), 
+            description: String::new(), 
             id: 0, 
             cast: vec![],
         };
@@ -261,14 +261,14 @@ mod tmdb_tests {
         let base = BaseInfo::new(title.to_owned(), year);
 
         let searcher = FakeSearcher::new(vec![], vec![movie], false);
-        let renamer = TmdbRenamer::new(settings, searcher, db_client.clone());
+        let renamer = ExternalRenamer::new(settings, searcher, db_client.clone());
 
         let options = renamer.find_options(&base, MOVIE).await.unwrap();
 
         assert!(options.is_some());
         let options = options.unwrap();
 
-        assert_eq!(MediaRenameOrigin::TMDB, options.origin()); 
+        assert_eq!(MediaRenameOrigin::EXTERNAL, options.origin()); 
         assert_eq!(1, options.descriptions().len()); 
         assert_eq!(title.to_owned(), options.descriptions()[0].title); 
         assert_eq!(year.unwrap().to_string(), options.descriptions()[0].date); 
@@ -298,11 +298,11 @@ mod tmdb_tests {
         let title = "game of thrones";
         let year = Some(2011);
 
-        let tv = Tv { 
-            name: title.to_owned(), 
+        let tv = ExternalMedia { 
+            title: title.to_owned(), 
             poster_path: Some(String::new()), 
-            first_air_date: year.unwrap().to_string(), 
-            overview: String::new(), 
+            date: year.unwrap().to_string(), 
+            description: String::new(), 
             id: 0, 
             cast: vec![],
         };
@@ -310,14 +310,14 @@ mod tmdb_tests {
         let base = BaseInfo::new(title.to_owned(), year);
 
         let searcher = FakeSearcher::new(vec![tv], vec![], false);
-        let renamer = TmdbRenamer::new(settings, searcher, db_client.clone());
+        let renamer = ExternalRenamer::new(settings, searcher, db_client.clone());
 
         let options = renamer.find_options(&base, TV).await.unwrap();
 
         assert!(options.is_some());
         let options = options.unwrap();
 
-        assert_eq!(MediaRenameOrigin::TMDB, options.origin()); 
+        assert_eq!(MediaRenameOrigin::EXTERNAL, options.origin()); 
         assert_eq!(1, options.descriptions().len()); 
         assert_eq!(title.to_owned(), options.descriptions()[0].title); 
         assert_eq!(year.unwrap().to_string(), options.descriptions()[0].date); 
