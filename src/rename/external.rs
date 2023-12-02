@@ -18,7 +18,6 @@ pub struct ExternalMedia {
     pub date: String,
     pub description: String,
     pub id: i32,
-    #[serde(skip_deserializing)]
     pub cast: Vec<String>,
 }
 
