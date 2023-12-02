@@ -10,6 +10,7 @@ pub mod moving;
 pub mod rename;
 pub mod tmdb;
 pub mod search;
+pub mod openapi;
 pub mod tests;
 
 pub fn uppercase_words(data: &str) -> String {

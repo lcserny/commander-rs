@@ -5,8 +5,10 @@ use eyre::Context;
 use tower::ServiceBuilder;
 use tower_http::{trace::TraceLayer, cors::{CorsLayer, Any}};
 use tracing::info;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
-use crate::{config::Settings, search, error::Error, download, command, moving, rename, db::DbClient};
+use crate::{config::Settings, search, error::Error, download, command, moving, rename, db::DbClient, openapi::ApiDoc};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -42,7 +44,9 @@ fn cors_layer() -> CorsLayer {
 }
 
 fn api_router(settings: Arc<Settings>, db_client: DbClient) -> Router {
-    search::router()
+    Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(search::router())
         .merge(download::router())
         .merge(command::router())
         .merge(moving::router())
