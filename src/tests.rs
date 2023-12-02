@@ -28,13 +28,10 @@ pub struct EmptyDb;
 
 #[async_trait]
 impl OnlineCacheRepo for EmptyDb {
-    async fn retrieve_all_by_base_and_type(
-        &self,
-        _base_info: &BaseInfo,
-        _media_type: MediaFileType,
-    ) -> eyre::Result<Vec<OnlineCacheItem>> {
+    async fn retrieve_all_by_base_and_type( &self, _base_info: &BaseInfo, _media_type: MediaFileType,) -> eyre::Result<Vec<OnlineCacheItem>> {
         Ok(vec![])
     }
+
     async fn save_items(&self, _items: Vec<OnlineCacheItem>) -> eyre::Result<()> {
         Ok(())
     }
@@ -42,11 +39,7 @@ impl OnlineCacheRepo for EmptyDb {
 
 #[async_trait]
 impl DownloadCacheRepo for EmptyDb {
-    async fn retrieve_all_by_date_range(
-        &self,
-        _date_from: NaiveDateTime,
-        _date_to: NaiveDateTime,
-    ) -> eyre::Result<Vec<DownloadedMedia>> {
+    async fn retrieve_all_by_date_range( &self, _date_from: NaiveDateTime, _date_to: NaiveDateTime,) -> eyre::Result<Vec<DownloadedMedia>> {
         Ok(vec![])
     }
 
