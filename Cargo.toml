@@ -35,4 +35,4 @@ tree_magic_mini = { version = "3.0.3", features = ["tree_magic_db", "with-gpl-da
 walkdir = "2.4.0"
 utoipa = { version = "4.1.0", features = ["axum_extras", "yaml", "chrono"] }
 serde_json = "1.0.108"
-utoipa-swagger-ui = { version = "5.0.0", features = ["axum"] }
+utoipa-swagger-ui = { version = "4.0.0", features = ["axum"] }

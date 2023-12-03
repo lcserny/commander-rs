@@ -21,5 +21,5 @@ fn main() {
 }
 
 fn gen_my_openapi() -> String {
-  ApiDoc::openapi().to_yaml().unwrap()
+    ApiDoc::openapi().to_yaml().unwrap()
 }

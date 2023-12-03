@@ -45,7 +45,7 @@ fn cors_layer() -> CorsLayer {
 
 fn api_router(settings: Arc<Settings>, db_client: DbClient) -> Router {
     Router::new()
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.yml", ApiDoc::openapi()))
         .merge(search::router())
         .merge(download::router())
         .merge(command::router())
