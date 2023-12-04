@@ -23,7 +23,7 @@ To start or stop service manually use:
 For communicating through a known contract with other services, use provided OpenAPI `spec.yml` file.   
 
 Spec can be regenerated with cargo command:   
-`cargo run --bin gen_openapi`   
+`cargo run --bin gen_openapi spec.yml`   
 
 SwaggerUI is also provided at following URI of running server:   
 `/swagger-ui`
