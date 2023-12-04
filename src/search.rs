@@ -7,6 +7,7 @@ use std::{
 use axum::{routing::get, Extension, Json, Router};
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use utoipa::ToSchema;
 use walkdir::DirEntry;
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
     http::{self, ApiContext},
 };
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, ToSchema)]
 pub struct MediaFileGroup {
     pub path: String,
     pub name: String,
@@ -115,6 +116,11 @@ pub fn router() -> Router {
     Router::new().route("/api/v1/media-searches", get(search_media))
 }
 
+#[utoipa::path(get, path = "/api/v1/media-searches",
+    responses(
+        (status = 200, description = "Search media files", body = [MediaFileGroup])
+    )
+)]
 pub async fn search_media(ctx: Extension<ApiContext>) -> http::Result<Json<Vec<MediaFileGroup>>> {
     info!("search_media request received");
 

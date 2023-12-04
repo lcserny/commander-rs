@@ -3,10 +3,6 @@ name = "commander"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "gen-openapi"
-path = "./src/openapi.rs"
-
 [dependencies]
 aho-corasick = "1.1.2"
 async-trait = "0.1.74"

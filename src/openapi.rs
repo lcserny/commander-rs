@@ -1,25 +1,19 @@
-use std::fs;
+use utoipa::OpenApi;
 
-use serde::Deserialize;
-use utoipa::{ToSchema, OpenApi};
-
-// TODO
-
-#[derive(Deserialize, ToSchema)]
-struct Person {
-    id: i64,
-    name: String,
-}
+// // TODO
 
 #[derive(OpenApi)]
-#[openapi(components(schemas(Person)))]
+#[openapi(
+    paths(
+        crate::search::search_media,
+    ),
+    components(
+        schemas(
+            crate::search::MediaFileGroup,
+        ),
+    ),
+    tags(
+        (name = "search", description = "Search media API")
+    )
+)]
 pub struct ApiDoc;
-
-fn main() {
-    let doc = gen_my_openapi();
-    fs::write("./spec.yml", doc);
-}
-
-fn gen_my_openapi() -> String {
-    ApiDoc::openapi().to_yaml().unwrap()
-}

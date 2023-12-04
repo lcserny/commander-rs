@@ -5,17 +5,38 @@ info:
   license:
     name: ''
   version: 0.1.0
-paths: {}
+paths:
+  /api/v1/media-searches:
+    get:
+      tags:
+      - crate::search
+      operationId: search_media
+      responses:
+        '200':
+          description: Search media files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MediaFileGroup'
 components:
   schemas:
-    Person:
+    MediaFileGroup:
       type: object
       required:
-      - id
+      - path
       - name
+      - videos
       properties:
-        id:
-          type: integer
-          format: int64
         name:
           type: string
+        path:
+          type: string
+        videos:
+          type: array
+          items:
+            type: string
+tags:
+- name: search
+  description: Search media API
