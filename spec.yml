@@ -6,6 +6,101 @@ info:
     name: ''
   version: 0.1.0
 paths:
+  /api/v1/commands:
+    post:
+      tags:
+      - crate::command
+      operationId: execute_cmd
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandReq'
+        required: true
+      responses:
+        '200':
+          description: Execute command given
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResp'
+  /api/v1/media-downloads:
+    get:
+      tags:
+      - crate::download
+      operationId: downloads_completed
+      parameters:
+      - name: year
+        in: query
+        description: year of downloaded media to retrieve
+        required: true
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      - name: month
+        in: query
+        description: month of downloaded media to retrieve
+        required: true
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      - name: day
+        in: query
+        description: day of downloaded media to retrieve
+        required: true
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      responses:
+        '200':
+          description: Get downloaded media files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DownloadedMedia'
+  /api/v1/media-moves:
+    post:
+      tags:
+      - crate::moving
+      operationId: move_media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaMoveReq'
+        required: true
+      responses:
+        '200':
+          description: Move given media
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MediaMoveError'
+  /api/v1/media-renames:
+    post:
+      tags:
+      - crate::rename
+      operationId: produce_renames
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaRenameRequest'
+        required: true
+      responses:
+        '200':
+          description: Produce media names
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenamedMediaOptions'
   /api/v1/media-searches:
     get:
       tags:
@@ -22,6 +117,40 @@ paths:
                   $ref: '#/components/schemas/MediaFileGroup'
 components:
   schemas:
+    CommandReq:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        params:
+          type: array
+          items:
+            type: string
+          nullable: true
+    CommandResp:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+    DownloadedMedia:
+      type: object
+      required:
+      - file_name
+      - file_size
+      - date_downloaded
+      properties:
+        date_downloaded:
+          type: integer
+          format: int64
+        file_name:
+          type: string
+        file_size:
+          type: integer
+          format: int64
     MediaFileGroup:
       type: object
       required:
@@ -37,6 +166,56 @@ components:
           type: array
           items:
             type: string
+    MediaMoveError:
+      type: object
+      required:
+      - media_path
+      - error
+      properties:
+        error:
+          type: string
+        media_path:
+          type: string
+    MediaMoveReq:
+      type: object
+      required:
+      - file_group
+      - media_type
+      properties:
+        file_group:
+          $ref: '#/components/schemas/MediaFileGroup'
+        media_type:
+          $ref: '#/components/schemas/MediaFileType'
+    MediaRenameRequest:
+      type: object
+      required:
+      - name
+      - media_type
+      properties:
+        media_type:
+          $ref: '#/components/schemas/MediaFileType'
+        name:
+          type: string
+    RenamedMediaOptions:
+      type: object
+      required:
+      - origin
+      - descriptions
+      properties:
+        descriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaDescription'
+        origin:
+          $ref: '#/components/schemas/MediaRenameOrigin'
 tags:
 - name: search
   description: Search media API
+- name: download
+  description: Downloaded media API
+- name: command
+  description: Command execution API
+- name: moving
+  description: Moving media API
+- name: rename
+  description: Renaming media API

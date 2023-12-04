@@ -5,6 +5,7 @@ use axum::{extract::State, routing::post, Json, Router};
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use tracing::log::info;
+use utoipa::ToSchema;
 
 use crate::http::{self};
 
@@ -49,13 +50,13 @@ pub trait Command {
     async fn execute(&self, mut params: Vec<String>) -> eyre::Result<CommandResp>;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CommandReq {
     pub name: String,
     pub params: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CommandResp {
     pub status: Status,
 }
@@ -67,6 +68,12 @@ pub enum Status {
     Failed,
 }
 
+#[utoipa::path(post, path = "/api/v1/commands",
+    request_body = CommandReq,
+    responses(
+        (status = 200, description = "Execute command given", body = CommandResp)
+    )
+)]
 pub async fn execute_cmd(
     State(commands): State<Arc<HashMap<String, CommandsKind>>>,
     Json(req): Json<CommandReq>,

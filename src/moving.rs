@@ -6,6 +6,7 @@ use eyre::eyre;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
+use utoipa::ToSchema;
 use walkdir::DirEntry;
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
 pub const SUBS_DIR: &str = "Subs";
 pub const EPISODE_SEGMENT_REGEX: &str = r".*[eE](\d{1,2}).*";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaMoveReq {
     #[serde(rename(serialize = "fileGroup", deserialize = "fileGroup"))]
     pub file_group: MediaFileGroup,
@@ -23,7 +24,7 @@ pub struct MediaMoveReq {
     pub media_type: MediaFileType,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaMoveError {
     #[serde(rename(serialize = "mediaPath", deserialize = "mediaPath"))]
     pub media_path: String,
@@ -44,6 +45,12 @@ pub fn router() -> Router {
         .with_state(Arc::new(Regex::new(EPISODE_SEGMENT_REGEX).unwrap())))
 }
 
+#[utoipa::path(post, path = "/api/v1/media-moves",
+    request_body = MediaMoveReq,
+    responses(
+        (status = 200, description = "Move given media", body = [MediaMoveError])
+    )
+)]
 pub async fn move_media( State(episode_regex): State<Arc<Regex>>,
         ctx: Extension<ApiContext>, Json(req): Json<MediaMoveReq>, ) -> Json<Vec<MediaMoveError>> {
     info!("move_media request received with paylod: {:?}", req);

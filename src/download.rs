@@ -4,12 +4,13 @@ use chrono::{Days, NaiveDateTime};
 use eyre::Context;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use utoipa::ToSchema;
 
 use crate::http::{self, ApiContext};
 
 pub const DATE_PATTERN: &str = "%Y-%m-%d %H:%M:%S";
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
 pub struct DownloadedMedia {
     pub file_name: String,
     pub file_size: i64,
@@ -37,6 +38,16 @@ pub fn router() -> Router {
     Router::new().route("/api/v1/media-downloads", get(downloads_completed))
 }
 
+#[utoipa::path(get, path = "/api/v1/media-downloads",
+    params(
+        ("year" = u32, Query, description = "year of downloaded media to retrieve"),
+        ("month" = u32, Query, description = "month of downloaded media to retrieve"),
+        ("day" = u32, Query, description = "day of downloaded media to retrieve"),
+    ),
+    responses(
+        (status = 200, description = "Get downloaded media files", body = [DownloadedMedia])
+    )
+)]
 pub async fn downloads_completed(
     ctx: Extension<ApiContext>,
     Query(params): Query<DownloadsCompletedParams>,

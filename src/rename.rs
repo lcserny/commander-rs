@@ -5,6 +5,7 @@ use axum::{Router, routing::post, Json, extract::State};
 use enum_dispatch::enum_dispatch;
 use serde::{Serialize, Deserialize};
 use tracing::{info, warn};
+use utoipa::ToSchema;
 
 use crate::{http::{self}, config::Settings, db::DbClient, tmdb::TmdbAPI};
 
@@ -52,14 +53,14 @@ pub enum MediaRenameOrigin {
     EXTERNAL,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaRenameRequest {
     name: String,
     #[serde(rename(serialize = "type", deserialize = "type"))]
     media_type: MediaFileType,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct RenamedMediaOptions {
     origin: MediaRenameOrigin,
     #[serde(rename(serialize = "mediaDescriptions", deserialize = "mediaDescriptions"))]
@@ -129,6 +130,12 @@ pub fn router(settings: Arc<Settings>, db_client: DbClient) -> Router {
         .with_state(Arc::new(RenamersContext::new(settings, db_client)))
 }
 
+#[utoipa::path(post, path = "/api/v1/media-renames",
+    request_body = MediaRenameRequest,
+    responses(
+        (status = 200, description = "Produce media names", body = RenamedMediaOptions)
+    )
+)]
 async fn produce_renames(State(rename_ctx): State<Arc<RenamersContext>>, 
         Json(req): Json<MediaRenameRequest>) -> http::Result<Json<RenamedMediaOptions>> {
     info!("produce_renames request received with payload: {:?}", req);
