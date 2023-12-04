@@ -61,7 +61,7 @@ pub struct CommandResp {
     pub status: Status,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, ToSchema)]
 pub enum Status {
     Success,
     NotFound,

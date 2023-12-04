@@ -16,7 +16,7 @@ pub mod cache;
 pub mod disk;
 pub mod name;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, ToSchema)]
 pub enum MediaFileType {
     MOVIE,
     TV,
@@ -45,7 +45,7 @@ impl ToString for MediaFileType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ToSchema)]
 pub enum MediaRenameOrigin {
     DISK,
     NAME,
@@ -81,7 +81,7 @@ impl RenamedMediaOptions {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaDescription {
     #[serde(rename(serialize = "posterUrl", deserialize = "posterUrl"))]
     pub poster_url: String,

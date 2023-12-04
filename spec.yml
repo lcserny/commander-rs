@@ -151,6 +151,27 @@ components:
         file_size:
           type: integer
           format: int64
+    MediaDescription:
+      type: object
+      required:
+      - poster_url
+      - title
+      - date
+      - description
+      - cast
+      properties:
+        cast:
+          type: array
+          items:
+            type: string
+        date:
+          type: string
+        description:
+          type: string
+        poster_url:
+          type: string
+        title:
+          type: string
     MediaFileGroup:
       type: object
       required:
@@ -166,6 +187,12 @@ components:
           type: array
           items:
             type: string
+    MediaFileType:
+      type: string
+      enum:
+      - MOVIE
+      - TV
+      - UNKNOWN
     MediaMoveError:
       type: object
       required:
@@ -186,6 +213,13 @@ components:
           $ref: '#/components/schemas/MediaFileGroup'
         media_type:
           $ref: '#/components/schemas/MediaFileType'
+    MediaRenameOrigin:
+      type: string
+      enum:
+      - DISK
+      - NAME
+      - CACHE
+      - EXTERNAL
     MediaRenameRequest:
       type: object
       required:
@@ -208,6 +242,12 @@ components:
             $ref: '#/components/schemas/MediaDescription'
         origin:
           $ref: '#/components/schemas/MediaRenameOrigin'
+    Status:
+      type: string
+      enum:
+      - Success
+      - NotFound
+      - Failed
 tags:
 - name: search
   description: Search media API
