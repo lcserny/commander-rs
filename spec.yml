@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: commander
-  description: ''
+  description: Plexhelp commander backend service
   license:
     name: ''
   version: 0.1.0
