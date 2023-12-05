@@ -19,14 +19,17 @@ pub const EPISODE_SEGMENT_REGEX: &str = r".*[eE](\d{1,2}).*";
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaMoveReq {
     #[serde(rename(serialize = "fileGroup", deserialize = "fileGroup"))]
+    #[schema(rename = "fileGroup")]
     pub file_group: MediaFileGroup,
     #[serde(rename(serialize = "type", deserialize = "type"))]
+    #[schema(rename = "type")]
     pub media_type: MediaFileType,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaMoveError {
     #[serde(rename(serialize = "mediaPath", deserialize = "mediaPath"))]
+    #[schema(rename = "mediaPath")]
     pub media_path: String,
     pub error: String,
 }

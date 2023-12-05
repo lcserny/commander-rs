@@ -57,6 +57,7 @@ pub enum MediaRenameOrigin {
 pub struct MediaRenameRequest {
     name: String,
     #[serde(rename(serialize = "type", deserialize = "type"))]
+    #[schema(rename = "type")]
     media_type: MediaFileType,
 }
 
@@ -64,6 +65,7 @@ pub struct MediaRenameRequest {
 pub struct RenamedMediaOptions {
     origin: MediaRenameOrigin,
     #[serde(rename(serialize = "mediaDescriptions", deserialize = "mediaDescriptions"))]
+    #[schema(rename = "mediaDescriptions")]
     descriptions: Vec<MediaDescription>,
 }
 
@@ -84,6 +86,7 @@ impl RenamedMediaOptions {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MediaDescription {
     #[serde(rename(serialize = "posterUrl", deserialize = "posterUrl"))]
+    #[schema(rename = "posterUrl")]
     pub poster_url: String,
     pub title: String,
     pub date: String,

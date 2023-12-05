@@ -154,7 +154,7 @@ components:
     MediaDescription:
       type: object
       required:
-      - poster_url
+      - posterUrl
       - title
       - date
       - description
@@ -168,7 +168,7 @@ components:
           type: string
         description:
           type: string
-        poster_url:
+        posterUrl:
           type: string
         title:
           type: string
@@ -196,22 +196,22 @@ components:
     MediaMoveError:
       type: object
       required:
-      - media_path
+      - mediaPath
       - error
       properties:
         error:
           type: string
-        media_path:
+        mediaPath:
           type: string
     MediaMoveReq:
       type: object
       required:
-      - file_group
-      - media_type
+      - fileGroup
+      - type
       properties:
-        file_group:
+        fileGroup:
           $ref: '#/components/schemas/MediaFileGroup'
-        media_type:
+        type:
           $ref: '#/components/schemas/MediaFileType'
     MediaRenameOrigin:
       type: string
@@ -224,19 +224,19 @@ components:
       type: object
       required:
       - name
-      - media_type
+      - type
       properties:
-        media_type:
-          $ref: '#/components/schemas/MediaFileType'
         name:
           type: string
+        type:
+          $ref: '#/components/schemas/MediaFileType'
     RenamedMediaOptions:
       type: object
       required:
       - origin
-      - descriptions
+      - mediaDescriptions
       properties:
-        descriptions:
+        mediaDescriptions:
           type: array
           items:
             $ref: '#/components/schemas/MediaDescription'
