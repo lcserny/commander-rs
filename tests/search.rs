@@ -46,9 +46,9 @@ mod tests {
     ]
     */
 
-    // FIXME: stil fails sometimes...
+    // FIXME: impl proper inmem fs handling for tests
     #[tokio::test]
-    async fn check_search_finds_correct_media() {
+    async fn flaky_check_search_finds_correct_media() {
         let settings = create_test_settings();
         let db_client = DbClient::new(Arc::new(EmptyDb));
 
