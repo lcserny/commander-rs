@@ -10,8 +10,10 @@ use utoipa::ToSchema;
 use crate::http::{self};
 
 use self::shutdown::ShutdownCommand;
+use self::reboot::RebootCommand;
 
 pub mod shutdown;
+pub mod reboot;
 
 pub fn router() -> Router {
     Router::new().route("/api/v1/commands", post(execute_cmd))
@@ -21,6 +23,7 @@ pub fn router() -> Router {
 fn init_commands() -> HashMap<String, CommandsKind> {
     let mut commands = HashMap::new();
     commands.insert( shutdown::KEY.to_owned(), CommandsKind::ShutdownCommand(ShutdownCommand));
+    commands.insert( reboot::KEY.to_owned(), CommandsKind::RebootCommand(RebootCommand));
 
     commands
 }
@@ -41,6 +44,7 @@ impl Command for StubCommand {
 #[enum_dispatch]
 pub enum CommandsKind {
     ShutdownCommand,
+    RebootCommand,
     StubCommand,
 }
 
