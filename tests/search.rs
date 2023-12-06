@@ -46,19 +46,18 @@ mod tests {
     ]
     */
 
-    // FIXME: impl proper inmem fs handling for tests
     #[tokio::test]
-    async fn flaky_check_search_finds_correct_media() {
+    async fn check_search_finds_correct_media() {
         let settings = create_test_settings();
         let db_client = DbClient::new(Arc::new(EmptyDb));
 
         let downloads_path = PathBuf::from(&settings.filesystem.downloads_path);
-        create_file(downloads_path.join("video1.mp4"), 6);
-        create_file(downloads_path.join(&settings.search.exclude_paths[0]).join("excluded.mp4"), 6);
-        create_file(downloads_path.join("video3.mkv"), 6);
+        create_file(downloads_path.join("video1.mp4"), 20);
+        create_file(downloads_path.join(&settings.search.exclude_paths[0]).join("excluded.mp4"), 20);
+        create_file(downloads_path.join("video3.mkv"), 20);
         create_file(downloads_path.join("small.mp4"), 0);
-        create_file(downloads_path.join("nested folder/nested.mp4"), 6);
-        create_file(downloads_path.join("1/2/3/4/5/deep.mp4"), 6);
+        create_file(downloads_path.join("nested folder/nested.mp4"), 20);
+        create_file(downloads_path.join("1/2/3/4/5/deep.mp4"), 20);
 
         let ctx = ApiContext { settings: Arc::new(settings), db_client, };
         let mut videos = search_media(Extension(ctx)).await.unwrap();

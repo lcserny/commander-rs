@@ -32,7 +32,7 @@ tv_path = "randomly generated in tmp dir"
 max_depth = 2
 exclude_paths = [ "exclude", "another/exclude" ]
 video_min_size_bytes = 5
-video_mime_types = [ "text/plain" ]
+video_mime_types = [ "text/plain", "application/octet-stream" ]
 
 [rename]
 trim_regex = [ ".[sS](\\d{1,2})([-]?[eE](\\d{1,2}))?", "[\\.\\s][sS][0-9]{1,2}[\\.\\s]?", "1080p", "720p", "2160p", "BluRay", "HDTV", "x264", "REPACK", "WEB-DL", "BRRip", "H264", "AAC", "XviD", "AC3", "HDRip", "DVDRip", "WEBRip", "DVDScr", "HQ", "KORSUB", "BDRip", ".?RARBG", "(\\d|\\.){1,5}(GB|MB)", "\\.EXTENDED\\.", "MP3", "(DD)?5\\.1", "DTS" ]

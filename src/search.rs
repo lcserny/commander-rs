@@ -6,7 +6,7 @@ use std::{
 
 use axum::{routing::get, Extension, Json, Router};
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 use utoipa::ToSchema;
 use walkdir::DirEntry;
 
@@ -57,16 +57,25 @@ impl MediaFilesParser {
     }
 
     fn exclude_by_content(&self, path: &DirEntry) -> bool {
-        if let Some(mime) = tree_magic_mini::from_filepath(path.path()) {
+        let ftype = match infer::get_from_path(path.path()) {
+            Ok(ftype) => ftype,
+            Err(e) => {
+                warn!("error occurred when infering file type: {:?}", e);
+                return false  
+            },
+        };
+        
+        if let Some(mime) = ftype {
             for allowed_mime in &self.settings.search.video_mime_types {
-                if allowed_mime == mime {
+                if allowed_mime == mime.mime_type() {
                     return true;
                 }
             }
-            if mime.starts_with("video/") {
+            if mime.mime_type().starts_with("video/") {
                 return true;
             }
         }
+
         false
     }
 

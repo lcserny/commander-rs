@@ -1,13 +1,12 @@
 use std::{
-    cmp,
     fs::{self, File},
-    io::{BufWriter, Write},
+    io::Write,
     path::{PathBuf, Path},
 };
 
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
-use rand::{Rng, RngCore};
+use rand::Rng;
 use testcontainers::{core::WaitFor, GenericImage};
 
 use crate::{
@@ -57,11 +56,12 @@ pub fn create_test_settings() -> Settings {
     let mut settings = init_config("config/settings_test", "TST_CMDR").unwrap();
 
     let mut rng = rand::thread_rng();
-    let random_number = rng.gen::<u32>();
-    let base_path = "/tmp/videosmover";
-    settings.filesystem.downloads_path = format!("{}/{}/downloads", &base_path, random_number);
-    settings.filesystem.movies_path = format!("{}/{}/movies", &base_path, random_number);
-    settings.filesystem.tv_path = format!("{}/{}/tv", &base_path, random_number);
+    let random_number = rng.gen::<u32>().to_string();
+    
+    let base_path = std::env::temp_dir().join("videosmover").join(&random_number);
+    settings.filesystem.downloads_path = base_path.join("downloads").to_string_lossy().into_owned();
+    settings.filesystem.movies_path = base_path.join("movies").to_string_lossy().into_owned();
+    settings.filesystem.tv_path = base_path.join("tv").to_string_lossy().into_owned();
 
     fs::create_dir_all(Path::new(&settings.filesystem.downloads_path)).unwrap();
     fs::create_dir_all(Path::new(&settings.filesystem.movies_path)).unwrap();
@@ -78,22 +78,11 @@ pub fn create_mongo_image() -> GenericImage {
         .with_wait_for(WaitFor::message_on_stdout("Waiting for connections"))
 }
 
+// if size is more than 20, valid video file content will be filled to given path
 pub fn create_file(path: PathBuf, size: usize) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
 
-    let f = File::create(&path).unwrap();
-    let mut writer = BufWriter::new(f);
-
-    let mut rng = rand::thread_rng();
-    let mut buffer = [0; 1024];
-    let mut remaining_size = size;
-
-    while remaining_size > 0 {
-        let to_write = cmp::min(remaining_size, buffer.len());
-        let buffer = &mut buffer[..to_write];
-        rng.fill_bytes(buffer);
-        writer.write(buffer).unwrap();
-
-        remaining_size -= to_write;
-    }
+    let mut f = File::create(&path).unwrap();
+    let a = fs::read("tests/resources/video.mp4").unwrap();
+    f.write_all(&a[..size]).unwrap();
 }
