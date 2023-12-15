@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use regex::Regex;
 use tracing::warn;
+use utils::uppercase_words;
 
-use crate::{config::Settings, uppercase_words};
+use crate::config::Settings;
 
 use super::MediaDescription;
 

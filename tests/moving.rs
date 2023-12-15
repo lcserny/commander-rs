@@ -14,9 +14,10 @@ mod tests {
         moving::{move_media, MediaMoveReq, EPISODE_SEGMENT_REGEX, SUBS_DIR},
         rename::MediaFileType,
         search::MediaFileGroup,
-        tests::{create_file, create_test_settings, EmptyDb},
+        tests::create_test_settings,
     };
     use regex::Regex;
+    use utils::tests::{EmptyDb, create_file};
 
     #[tokio::test]
     async fn moving_existing_movie_errors() {

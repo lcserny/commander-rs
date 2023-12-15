@@ -8,7 +8,7 @@ use tracing::info;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::{config::Settings, search, error::Error, download, command, moving, rename, db::DbClient, openapi::ApiDoc};
+use crate::{config::Settings, search, download, command, moving, rename, db::DbClient, openapi::ApiDoc, error::Error};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 

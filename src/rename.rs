@@ -169,8 +169,9 @@ async fn produce_rename_options(base_info: BaseInfo, renamers: &BTreeMap<Renamer
 #[cfg(test)]
 mod tests {
     use std::{sync::Arc, any::Any};
+    use utils::tests::EmptyDb;
 
-    use crate::{tests::{create_test_settings, EmptyDb}, db::DbClient, rename::{cache::CacheRenamer, external::ExternalRenamer, RenamerKind}, tmdb::TmdbAPI};
+    use crate::{tests::create_test_settings, db::DbClient, rename::{cache::CacheRenamer, external::ExternalRenamer, RenamerKind}, tmdb::TmdbAPI};
 
     use super::{RenamersContext, disk::DiskRenamer};
 

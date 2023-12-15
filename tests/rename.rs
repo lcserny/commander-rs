@@ -53,7 +53,8 @@ mod name_tests {
 mod disk_tests {
     use std::{sync::Arc, path::Path};
 
-    use commander::{tests::{create_test_settings, create_file}, rename::{name::BaseInfo, disk::DiskRenamer, Renamer, MediaFileType}};
+    use commander::{tests::create_test_settings, rename::{name::BaseInfo, disk::DiskRenamer, Renamer, MediaFileType}};
+    use utils::tests::create_file;
 
     #[tokio::test]
     async fn chheck_similar_media() {

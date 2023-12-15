@@ -7,8 +7,9 @@ mod tests {
         db::DbClient,
         http::ApiContext,
         search::search_media,
-        tests::{create_file, create_test_settings, EmptyDb},
+        tests::create_test_settings,
     };
+    use utils::tests::{EmptyDb, create_file};
 
     /*
     [

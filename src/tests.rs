@@ -1,16 +1,16 @@
 use std::{
-    fs::{self, File},
-    io::Write,
-    path::{PathBuf, Path},
+    fs::{self},
+    path::Path,
 };
 
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use rand::Rng;
 use testcontainers::{core::WaitFor, GenericImage};
+use utils::{tests::EmptyDb, config::init_config};
 
 use crate::{
-    config::{init_config, Settings},
+    config::Settings,
     download::{DownloadCacheRepo, DownloadedMedia},
     rename::{
         name::BaseInfo,
@@ -22,8 +22,6 @@ use crate::{
 pub const MONGO_PORT: u16 = 27017;
 pub const MONGO_USER: &str = "root";
 pub const MONGO_PASS: &str = "rootpass";
-
-pub struct EmptyDb;
 
 #[async_trait]
 impl OnlineCacheRepo for EmptyDb {
@@ -53,7 +51,7 @@ fn init_test_logging() {
 
 pub fn create_test_settings() -> Settings {
     init_test_logging();
-    let mut settings = init_config("config/settings_test", "TST_CMDR").unwrap();
+    let mut settings = init_config::<Settings>("config/settings_test", "TST_CMDR").unwrap();
 
     let mut rng = rand::thread_rng();
     let random_number = rng.gen::<u32>().to_string();
@@ -76,13 +74,4 @@ pub fn create_mongo_image() -> GenericImage {
         .with_env_var("MONGO_INITDB_ROOT_USERNAME", MONGO_USER)
         .with_env_var("MONGO_INITDB_ROOT_PASSWORD", MONGO_PASS)
         .with_wait_for(WaitFor::message_on_stdout("Waiting for connections"))
-}
-
-// if size is more than 20, valid video file content will be filled to given path
-pub fn create_file(path: PathBuf, size: usize) {
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-
-    let mut f = File::create(&path).unwrap();
-    let a = fs::read("tests/resources/video.mp4").unwrap();
-    f.write_all(&a[..size]).unwrap();
 }
